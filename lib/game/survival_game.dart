@@ -104,9 +104,39 @@ class SurvivalGame extends FlameGame with HasCollisionDetection, KeyboardEvents 
         player.useSkill3();
         return KeyEventResult.handled;
       }
+      // Bật/tắt túi đồ: Phím I hoặc B
+      if (event.logicalKey == LogicalKeyboardKey.keyI || event.logicalKey == LogicalKeyboardKey.keyB) {
+        toggleInventory();
+        return KeyEventResult.handled;
+      }
     }
 
     return KeyEventResult.ignored;
+  }
+
+  /// Mở giao diện túi đồ và tạm dừng vòng lặp game
+  void openInventory() {
+    if (!overlays.isActive('inventory')) {
+      pauseEngine();
+      overlays.add('inventory');
+    }
+  }
+
+  /// Đóng giao diện túi đồ và tiếp tục trò chơi
+  void closeInventory() {
+    if (overlays.isActive('inventory')) {
+      overlays.remove('inventory');
+      resumeEngine();
+    }
+  }
+
+  /// Bật/tắt nhanh túi đồ
+  void toggleInventory() {
+    if (overlays.isActive('inventory')) {
+      closeInventory();
+    } else {
+      openInventory();
+    }
   }
 
   @override

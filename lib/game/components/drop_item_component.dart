@@ -171,13 +171,22 @@ class DropItemComponent extends PositionComponent with HasGameReference<Survival
         );
       case DropItemType.equipment:
         if (equipment != null) {
-          player.equip(equipment!);
-          game.world.add(
-            FloatingTextComponent.info(
-              position: position.clone(),
-              text: '+${equipment!.name}',
-            ),
-          );
+          final added = player.addToInventory(equipment!);
+          if (added) {
+            game.world.add(
+              FloatingTextComponent.info(
+                position: position.clone(),
+                text: '+${equipment!.name}',
+              ),
+            );
+          } else {
+            game.world.add(
+              FloatingTextComponent.info(
+                position: position.clone(),
+                text: 'Túi đồ đầy!',
+              ),
+            );
+          }
         }
     }
     removeFromParent();

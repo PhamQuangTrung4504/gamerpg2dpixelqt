@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'game/survival_game.dart';
+import 'ui/inventory/inventory_overlay.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,6 +34,9 @@ class GameApp extends StatelessWidget {
       home: Scaffold(
         body: GameWidget<SurvivalGame>.controlled(
           gameFactory: SurvivalGame.new,
+          overlayBuilderMap: {
+            'inventory': (context, game) => InventoryOverlay(game: game),
+          },
         ),
       ),
     );

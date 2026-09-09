@@ -22,6 +22,7 @@ class GameHud extends PositionComponent with HasGameReference<SurvivalGame> {
   HudActionButton? _skill1Btn;
   HudActionButton? _skill2Btn;
   HudActionButton? _skill3Btn;
+  HudActionButton? _inventoryBtn;
 
   final Paint _hpFillPaint = Paint()..color = const Color(0xFFE53935);
   final Paint _mpFillPaint = Paint()..color = const Color(0xFF1E88E5);
@@ -185,10 +186,19 @@ class GameHud extends PositionComponent with HasGameReference<SurvivalGame> {
       onPressed: () => game.player.useSkill3(),
     );
 
+    // 8. Nút Rương Đồ mở Túi Đồ (Góc trên bên phải màn hình)
+    final chestSprite = await game.loadSprite(AssetPaths.iconInventory);
+    _inventoryBtn = HudActionButton(
+      sprite: chestSprite,
+      size: Vector2.all(36.0),
+      onPressed: () => game.openInventory(),
+    );
+
     add(_attackBtn!);
     add(_skill1Btn!);
     add(_skill2Btn!);
     add(_skill3Btn!);
+    add(_inventoryBtn!);
 
     _isInitialized = true;
     _repositionButtons();
@@ -214,6 +224,12 @@ class GameHud extends PositionComponent with HasGameReference<SurvivalGame> {
 
     final screenSize = game.size;
     if (screenSize.x <= 0 || screenSize.y <= 0) return;
+
+    // Nút rương đồ ở góc trên bên phải: cách mép phải 24px, mép trên 20px
+    if (_inventoryBtn != null) {
+      _inventoryBtn!.size = Vector2.all(36.0);
+      _inventoryBtn!.position = Vector2(screenSize.x - 24 - 18, 20 + 18);
+    }
 
     // Nút đánh thường: tăng 20% lên 67px, cách mép phải và dưới 42px
     const attackBtnSize = 67.0;

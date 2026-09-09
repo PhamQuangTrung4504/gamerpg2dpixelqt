@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flame/components.dart';
+import 'package:flutter/foundation.dart';
 import '../../constants/direction.dart';
 import '../../constants/equipment_types.dart';
 import '../../constants/game_constants.dart';
@@ -17,11 +18,20 @@ import 'skills/flame_slash_projectile.dart';
 import 'skills/shield_effect.dart';
 import 'skills/sword_storm_area.dart';
 
+class InventoryNotifier extends ChangeNotifier {
+  void notify() => notifyListeners();
+}
+
 /// Component người chơi chính kết hợp Thân và Đa lớp trang bị (Multi-layer Equipment)
 class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGame> {
   final BodyComponent _body = BodyComponent();
   final Map<EquipmentType, EquipmentLayerComponent> _equipmentLayers = {};
   final Map<EquipmentType, Equipment> _equippedItems = {};
+
+  // Hệ thống túi đồ (Inventory)
+  static const int maxInventorySlots = 20;
+  final List<Equipment> _inventory = [];
+  final InventoryNotifier inventoryNotifier = InventoryNotifier();
 
   GameDirection _direction = GameDirection.down;
   CharacterState _state = CharacterState.idle;
@@ -66,8 +76,14 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
         // Tự động hồi đầy HP và MP khi thăng cấp
         _currentHp = _totalStats.maxHp;
         _currentMp = _totalStats.maxMp;
+        notifyInventoryChanged();
       },
     );
+
+    // Mặc định trang bị kiếm gỗ cho nhân vật ban đầu
+    _equippedItems[EquipmentType.sword] = EquipmentCatalog.kiemGo;
+    _gold = 0;
+
     _recalculateStats();
     _currentHp = _totalStats.maxHp;
     _currentMp = _totalStats.maxMp;
@@ -81,9 +97,66 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
   int get gold => _gold;
   ExpManager get expManager => _expManager;
   Map<EquipmentType, Equipment> get equippedItems => Map.unmodifiable(_equippedItems);
+  List<Equipment> get inventory => List.unmodifiable(_inventory);
+
+  void notifyInventoryChanged() {
+    inventoryNotifier.notify();
+  }
 
   void addGold(int amount) {
     _gold += amount;
+    notifyInventoryChanged();
+  }
+
+  /// Thêm vật phẩm vào túi đồ
+  bool addToInventory(Equipment item) {
+    if (_inventory.length >= maxInventorySlots) return false;
+    _inventory.add(item);
+    notifyInventoryChanged();
+    return true;
+  }
+
+  /// Xóa vật phẩm khỏi túi đồ
+  bool removeFromInventory(Equipment item) {
+    final removed = _inventory.remove(item);
+    if (removed) {
+      notifyInventoryChanged();
+    }
+    return removed;
+  }
+
+  /// Trang bị một vật phẩm từ túi đồ:
+  /// Nếu ô đó đang có đồ, cất đồ cũ vào túi đồ.
+  Future<void> equipFromInventory(Equipment item) async {
+    _inventory.remove(item);
+    final oldEquipped = _equippedItems[item.type];
+    if (oldEquipped != null) {
+      _inventory.add(oldEquipped);
+    }
+    await equip(item);
+    notifyInventoryChanged();
+  }
+
+  /// Tháo trang bị trên người cất lại vào túi đồ
+  bool unequipToInventory(EquipmentType type) {
+    final item = _equippedItems[type];
+    if (item == null) return false;
+    if (_inventory.length >= maxInventorySlots) return false;
+
+    unequip(type);
+    _inventory.add(item);
+    notifyInventoryChanged();
+    return true;
+  }
+
+  /// Bán một vật phẩm trong túi đồ lấy vàng theo đúng giá catalog
+  bool sellInventoryItem(Equipment item) {
+    if (_inventory.remove(item)) {
+      addGold(item.sellPrice);
+      notifyInventoryChanged();
+      return true;
+    }
+    return false;
   }
 
   /// Áp dụng hiệu ứng buff phòng thủ tạm thời (từ Kỹ năng 3)
@@ -105,8 +178,15 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
     // Thêm Thân nhân vật
     await add(_body);
 
-    // Mặc định trang bị kiếm gỗ cho nhân vật ban đầu
-    await equip(EquipmentCatalog.kiemGo);
+    // Nạp các lớp trang bị hình ảnh đang mặc
+    for (final item in _equippedItems.values) {
+      if (item.type.hasVisualLayer) {
+        final layer = EquipmentLayerComponent(equipment: item);
+        _equipmentLayers[item.type] = layer;
+        await add(layer);
+        layer.updateStateAndDirection(state: _state, direction: _direction);
+      }
+    }
     _syncLayers();
   }
 
@@ -115,15 +195,15 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
     // Tháo trang bị cũ cùng loại nếu có
     if (_equipmentLayers.containsKey(equipment.type)) {
       final oldLayer = _equipmentLayers.remove(equipment.type);
-      if (oldLayer != null) {
+      if (oldLayer != null && isMounted) {
         remove(oldLayer);
       }
     }
 
     _equippedItems[equipment.type] = equipment;
 
-    // Nếu trang bị có lớp hình ảnh hiển thị trên người
-    if (equipment.type.hasVisualLayer) {
+    // Nếu trang bị có lớp hình ảnh hiển thị trên người và component đã được mount
+    if (equipment.type.hasVisualLayer && isMounted) {
       final layer = EquipmentLayerComponent(equipment: equipment);
       _equipmentLayers[equipment.type] = layer;
       await add(layer);
@@ -131,6 +211,7 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
     }
 
     _recalculateStats();
+    notifyInventoryChanged();
   }
 
   /// Tháo trang bị theo loại
@@ -138,10 +219,11 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
     if (_equippedItems.containsKey(type)) {
       _equippedItems.remove(type);
       final layer = _equipmentLayers.remove(type);
-      if (layer != null) {
+      if (layer != null && isMounted) {
         remove(layer);
       }
       _recalculateStats();
+      notifyInventoryChanged();
     }
   }
 
