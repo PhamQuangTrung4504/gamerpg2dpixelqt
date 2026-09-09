@@ -1,5 +1,7 @@
+import 'dart:ui';
 import 'package:flame/components.dart';
 import '../../constants/direction.dart';
+import '../../constants/equipment_types.dart';
 import '../../constants/game_constants.dart';
 import '../../constants/player_state.dart';
 import '../../core/asset_paths.dart';
@@ -13,6 +15,7 @@ class EquipmentLayerComponent extends SpriteAnimationComponent with HasGameRefer
   GameDirection _direction = GameDirection.down;
 
   final Map<String, SpriteAnimation> _animationCache = {};
+  bool isVisible = true;
 
   EquipmentLayerComponent({required this.equipment})
       : super(
@@ -76,6 +79,11 @@ class EquipmentLayerComponent extends SpriteAnimationComponent with HasGameRefer
     // Cập nhật Z-Index / Dynamic Priority theo hướng nhìn
     priority = equipment.type.getRenderPriority(direction);
 
+    // Kính râm: Ẩn hoàn toàn khi nhìn lên trên (phia_tren - nhìn từ sau lưng)
+    if (equipment.type == EquipmentType.glasses) {
+      isVisible = direction != GameDirection.up;
+    }
+
     if (_state == state && _direction == direction) return;
     _state = state;
     _direction = direction;
@@ -83,10 +91,22 @@ class EquipmentLayerComponent extends SpriteAnimationComponent with HasGameRefer
   }
 
   void _updateAnimation() {
+    // Nếu là kính và nhìn lên trên: xóa animation để không hiển thị lại frame cũ
+    if (equipment.type == EquipmentType.glasses && _direction == GameDirection.up) {
+      animation = null;
+      return;
+    }
+
     final dirKey = _direction == GameDirection.right ? GameDirection.left : _direction;
     final key = '${_state.name}_${dirKey.assetSuffix}';
     if (_animationCache.containsKey(key)) {
       animation = _animationCache[key];
     }
+  }
+
+  @override
+  void render(Canvas canvas) {
+    if (!isVisible) return;
+    super.render(canvas);
   }
 }

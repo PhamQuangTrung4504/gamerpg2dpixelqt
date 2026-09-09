@@ -26,10 +26,11 @@ class ShieldBuffEffectComponent extends PositionComponent with HasGameReference<
   double _timer = 0.0;
   double _orbitAngle = 0.0;
   double _grazeTimer = 0.0;
+  final int skillLevel;
 
   final List<SpriteComponent> _orbitingSwords = [];
 
-  ShieldBuffEffectComponent()
+  ShieldBuffEffectComponent({this.skillLevel = 1})
       : super(
           size: Vector2.zero(),
           anchor: Anchor.center,
@@ -76,10 +77,11 @@ class ShieldBuffEffectComponent extends PositionComponent with HasGameReference<
     } catch (_) {}
 
     // 3. Bật hiệu ứng buff chỉ số cho nhân vật
+    final skillData = SkillCatalog.nguKiemPhiKiem.getDataForLevel(skillLevel);
     game.player.applyTemporaryBuff(
-      extraArmor: buffArmor,
-      extraCritResistance: buffCritResistance,
-      duration: shieldDuration,
+      extraArmor: skillData.buffArmor,
+      extraCritResistance: skillData.buffCritResistance,
+      duration: skillData.buffDuration > 0 ? skillData.buffDuration : shieldDuration,
     );
 
     // 4. Hiện chữ thông báo hiệu ứng
@@ -87,7 +89,7 @@ class ShieldBuffEffectComponent extends PositionComponent with HasGameReference<
       game.world.add(
         FloatingTextComponent.info(
           position: game.player.position.clone() + Vector2(0, -24),
-          text: 'Hộ Thể: +$buffArmor Giáp!',
+          text: 'Hộ Thể: +${skillData.buffArmor.toInt()} Giáp!',
         ),
       );
     }
@@ -176,6 +178,7 @@ class ShieldBuffEffectComponent extends PositionComponent with HasGameReference<
       final flyingSword = FlyingSwordProjectileComponent(
         startPosition: swordStartPos,
         burstAngle: a,
+        skillLevel: skillLevel,
       );
       game.world.add(flyingSword);
     }

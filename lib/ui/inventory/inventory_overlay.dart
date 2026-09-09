@@ -142,113 +142,116 @@ class _InventoryOverlayState extends State<InventoryOverlay> {
                               const SizedBox(height: 4),
 
                               // Nửa trên: Bố trí 10 ô trang bị bao quanh nhân vật theo cấu tạo RPG
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  // Cột bên trái (4 ô): Kính, Dây chuyền, Quần, Giày
-                                  Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      EquipmentSlotWidget(
-                                        size: 28,
-                                        item: equipped[EquipmentType.glasses],
-                                        slotType: EquipmentType.glasses,
-                                        onTap: () => _inspectEquippedItem(EquipmentType.glasses),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      EquipmentSlotWidget(
-                                        size: 28,
-                                        item: equipped[EquipmentType.necklace],
-                                        slotType: EquipmentType.necklace,
-                                        onTap: () => _inspectEquippedItem(EquipmentType.necklace),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      EquipmentSlotWidget(
-                                        size: 28,
-                                        item: equipped[EquipmentType.pants],
-                                        slotType: EquipmentType.pants,
-                                        onTap: () => _inspectEquippedItem(EquipmentType.pants),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      EquipmentSlotWidget(
-                                        size: 28,
-                                        item: equipped[EquipmentType.shoes],
-                                        slotType: EquipmentType.shoes,
-                                        onTap: () => _inspectEquippedItem(EquipmentType.shoes),
-                                      ),
-                                    ],
-                                  ),
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    // Cột bên trái (4 ô): Kính, Dây chuyền, Quần, Giày
+                                    Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        EquipmentSlotWidget(
+                                          size: 28,
+                                          item: equipped[EquipmentType.glasses],
+                                          slotType: EquipmentType.glasses,
+                                          onTap: () => _inspectEquippedItem(EquipmentType.glasses),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        EquipmentSlotWidget(
+                                          size: 28,
+                                          item: equipped[EquipmentType.necklace],
+                                          slotType: EquipmentType.necklace,
+                                          onTap: () => _inspectEquippedItem(EquipmentType.necklace),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        EquipmentSlotWidget(
+                                          size: 28,
+                                          item: equipped[EquipmentType.pants],
+                                          slotType: EquipmentType.pants,
+                                          onTap: () => _inspectEquippedItem(EquipmentType.pants),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        EquipmentSlotWidget(
+                                          size: 28,
+                                          item: equipped[EquipmentType.shoes],
+                                          slotType: EquipmentType.shoes,
+                                          onTap: () => _inspectEquippedItem(EquipmentType.shoes),
+                                        ),
+                                      ],
+                                    ),
 
-                                  const SizedBox(width: 8),
+                                    const SizedBox(width: 8),
 
-                                  // Cột chính giữa: Mũ (trên đầu), Nhân vật Preview, Áo giáp (dưới thân)
-                                  Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      // Phía trên: Mũ nằm chính giữa bên trên đầu nhân vật
-                                      EquipmentSlotWidget(
-                                        size: 28,
-                                        item: equipped[EquipmentType.helmet],
-                                        slotType: EquipmentType.helmet,
-                                        onTap: () => _inspectEquippedItem(EquipmentType.helmet),
-                                      ),
-                                      const SizedBox(height: 3),
+                                    // Cột chính giữa: Mũ (trên đầu), Nhân vật Preview, Áo giáp (dưới thân)
+                                    Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        // Phía trên: Mũ nằm chính giữa bên trên đầu nhân vật
+                                        EquipmentSlotWidget(
+                                          size: 28,
+                                          item: equipped[EquipmentType.helmet],
+                                          slotType: EquipmentType.helmet,
+                                          onTap: () => _inspectEquippedItem(EquipmentType.helmet),
+                                        ),
+                                        const SizedBox(height: 3),
 
-                                      // Mô hình nhân vật preview (thu nhỏ 20%, scale 1.45, khung 56x56)
-                                      CharacterPreviewWidget(
-                                        equippedItems: equipped,
-                                        scale: 1.45,
-                                        containerSize: 56,
-                                      ),
-                                      const SizedBox(height: 3),
+                                        // Mô hình nhân vật preview (thu nhỏ 20%, scale 1.45, khung 56x56)
+                                        CharacterPreviewWidget(
+                                          equippedItems: equipped,
+                                          scale: 1.45,
+                                          containerSize: 56,
+                                        ),
+                                        const SizedBox(height: 3),
 
-                                      // Dưới thân: Áo giáp
-                                      EquipmentSlotWidget(
-                                        size: 28,
-                                        item: equipped[EquipmentType.armor],
-                                        slotType: EquipmentType.armor,
-                                        onTap: () => _inspectEquippedItem(EquipmentType.armor),
-                                      ),
-                                    ],
-                                  ),
+                                        // Dưới thân: Áo giáp
+                                        EquipmentSlotWidget(
+                                          size: 28,
+                                          item: equipped[EquipmentType.armor],
+                                          slotType: EquipmentType.armor,
+                                          onTap: () => _inspectEquippedItem(EquipmentType.armor),
+                                        ),
+                                      ],
+                                    ),
 
-                                  const SizedBox(width: 8),
+                                    const SizedBox(width: 8),
 
-                                  // Cột bên phải (4 ô): Kiếm (Vũ khí), Cánh, Nhẫn, Bí kíp
-                                  Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      EquipmentSlotWidget(
-                                        size: 28,
-                                        item: equipped[EquipmentType.sword],
-                                        slotType: EquipmentType.sword,
-                                        onTap: () => _inspectEquippedItem(EquipmentType.sword),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      EquipmentSlotWidget(
-                                        size: 28,
-                                        item: equipped[EquipmentType.wings],
-                                        slotType: EquipmentType.wings,
-                                        onTap: () => _inspectEquippedItem(EquipmentType.wings),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      EquipmentSlotWidget(
-                                        size: 28,
-                                        item: equipped[EquipmentType.ring],
-                                        slotType: EquipmentType.ring,
-                                        onTap: () => _inspectEquippedItem(EquipmentType.ring),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      EquipmentSlotWidget(
-                                        size: 28,
-                                        item: equipped[EquipmentType.tome],
-                                        slotType: EquipmentType.tome,
-                                        onTap: () => _inspectEquippedItem(EquipmentType.tome),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                    // Cột bên phải (4 ô): Kiếm (Vũ khí), Cánh, Nhẫn, Bí kíp
+                                    Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        EquipmentSlotWidget(
+                                          size: 28,
+                                          item: equipped[EquipmentType.sword],
+                                          slotType: EquipmentType.sword,
+                                          onTap: () => _inspectEquippedItem(EquipmentType.sword),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        EquipmentSlotWidget(
+                                          size: 28,
+                                          item: equipped[EquipmentType.wings],
+                                          slotType: EquipmentType.wings,
+                                          onTap: () => _inspectEquippedItem(EquipmentType.wings),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        EquipmentSlotWidget(
+                                          size: 28,
+                                          item: equipped[EquipmentType.ring],
+                                          slotType: EquipmentType.ring,
+                                          onTap: () => _inspectEquippedItem(EquipmentType.ring),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        EquipmentSlotWidget(
+                                          size: 28,
+                                          item: equipped[EquipmentType.tome],
+                                          slotType: EquipmentType.tome,
+                                          onTap: () => _inspectEquippedItem(EquipmentType.tome),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
 
                               const SizedBox(height: 6),

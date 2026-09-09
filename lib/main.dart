@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'game/survival_game.dart';
 import 'ui/inventory/inventory_overlay.dart';
+import 'ui/skills/skill_tree_overlay.dart';
+import 'ui/stats/character_stats_overlay.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +38,8 @@ class GameApp extends StatelessWidget {
           gameFactory: SurvivalGame.new,
           overlayBuilderMap: {
             'inventory': (context, game) => InventoryOverlay(game: game),
+            'StatsOverlay': (context, game) => CharacterStatsOverlay(game: game),
+            'SkillOverlay': (context, game) => SkillTreeOverlay(game: game),
           },
         ),
       ),

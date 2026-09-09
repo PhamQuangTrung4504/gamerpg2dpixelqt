@@ -29,8 +29,12 @@ class SwordStormAreaComponent extends PositionComponent with HasGameReference<Su
     ..style = PaintingStyle.stroke
     ..strokeWidth = 1.5;
 
-  SwordStormAreaComponent({required Vector2 centerPosition})
-      : super(
+  final int skillLevel;
+
+  SwordStormAreaComponent({
+    required Vector2 centerPosition,
+    this.skillLevel = 1,
+  })  : super(
           position: centerPosition.clone(),
           size: Vector2.all(effectRadius * 2),
           anchor: Anchor.center,
@@ -93,7 +97,7 @@ class SwordStormAreaComponent extends PositionComponent with HasGameReference<Su
 
     // 2. Gây sát thương + làm chậm 30% lên tất cả quái vật trong bán kính 90px
     final player = game.player;
-    final skillData = SkillCatalog.vanKiemQuyTong.getDataForLevel(1);
+    final skillData = SkillCatalog.vanKiemQuyTong.getDataForLevel(skillLevel);
 
     final monsters = game.world.children.whereType<MonsterComponent>().toList();
     for (final monster in monsters) {

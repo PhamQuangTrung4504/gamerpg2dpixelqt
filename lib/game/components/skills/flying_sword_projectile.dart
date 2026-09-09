@@ -22,10 +22,12 @@ class FlyingSwordProjectileComponent extends SpriteComponent with HasGameReferen
   double _timer = 0.0;
   Vector2 _velocity = Vector2.zero();
   MonsterComponent? _target;
+  final int skillLevel;
 
   FlyingSwordProjectileComponent({
     required Vector2 startPosition,
     required this.burstAngle,
+    this.skillLevel = 1,
   }) : super(
           position: startPosition.clone(),
           size: Vector2.all(24.0),
@@ -109,7 +111,7 @@ class FlyingSwordProjectileComponent extends SpriteComponent with HasGameReferen
   /// Xử lý trúng đích gây sát thương và hiệu ứng
   void _hitTarget(MonsterComponent monster) {
     final player = game.player;
-    final skillData = SkillCatalog.nguKiemPhiKiem.getDataForLevel(1);
+    final skillData = SkillCatalog.nguKiemPhiKiem.getDataForLevel(skillLevel);
 
     final result = CombatCalculator.calculateDamage(
       attacker: player.stats,

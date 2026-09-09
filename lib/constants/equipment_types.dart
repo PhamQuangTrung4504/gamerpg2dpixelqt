@@ -72,34 +72,40 @@ enum EquipmentType {
 
   /// Thứ tự vẽ (Z-Index / Dynamic Priority) theo hướng nhìn của nhân vật:
   /// - Hướng down, left, right (nhìn phía trước / nghiêng):
-  ///   + Cánh & Kiếm sau lưng: priority = 10 (dưới thân)
+  ///   + Cánh: priority = 5 (nằm sau cùng)
+  ///   + Kiếm: priority = 10 (nằm đè lên cánh, dưới thân)
   ///   + Thân (Body): priority = 20
-  ///   + Quần, Giáp, Giày, Mũ, Phụ kiện: priority = 30 (đè lên thân)
+  ///   + Quần, Giáp, Giày, Mũ, Dây chuyền, Kính: priority = 30 (đè lên thân)
   /// - Hướng up (nhìn từ sau lưng):
   ///   + Thân (Body): priority = 10
-  ///   + Quần, Giáp, Giày, Mũ: priority = 20
-  ///   + Cánh & Kiếm: priority = 40 (vẽ đè lên trên cùng để lộ rõ kiếm/cánh sau lưng)
+  ///   + Quần, Giáp, Giày, Mũ, Dây chuyền: priority = 20
+  ///   + Cánh (Wings): priority = 35 (đè lên lưng áo)
+  ///   + Kiếm (Sword): priority = 40 (vẽ đè lên trên cả Cánh để lộ rõ kiếm sau lưng)
+  ///   + Kính (Glasses): priority = 0 (ẩn khi nhìn từ sau lưng)
   int getRenderPriority(GameDirection direction) {
     if (direction == GameDirection.up) {
       switch (this) {
         case EquipmentType.sword:
-        case EquipmentType.wings:
           return 40;
+        case EquipmentType.wings:
+          return 35;
         case EquipmentType.pants:
         case EquipmentType.armor:
         case EquipmentType.shoes:
         case EquipmentType.helmet:
-        case EquipmentType.glasses:
         case EquipmentType.necklace:
           return 20;
+        case EquipmentType.glasses:
+          return 0;
         case EquipmentType.ring:
         case EquipmentType.tome:
           return 0;
       }
     } else {
       switch (this) {
-        case EquipmentType.sword:
         case EquipmentType.wings:
+          return 5;
+        case EquipmentType.sword:
           return 10;
         case EquipmentType.pants:
         case EquipmentType.armor:

@@ -64,15 +64,13 @@ class NineSliceBox extends StatelessWidget {
       width: width,
       height: height,
       child: Stack(
-        fit: StackFit.passthrough,
+        fit: StackFit.expand,
         children: [
-          Positioned.fill(
-            child: Image.asset(
-              imagePath,
-              centerSlice: centerSlice,
-              fit: BoxFit.fill,
-              filterQuality: FilterQuality.none,
-            ),
+          Image.asset(
+            imagePath,
+            centerSlice: centerSlice,
+            fit: BoxFit.fill,
+            filterQuality: FilterQuality.none,
           ),
           if (child != null)
             Padding(

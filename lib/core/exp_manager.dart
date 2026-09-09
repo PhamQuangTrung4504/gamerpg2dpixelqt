@@ -5,6 +5,7 @@ class ExpManager {
   int _currentLevel;
   int _currentExp;
   int _skillPoints;
+  int _attributePoints;
 
   /// Callback khi nhân vật thăng cấp: level mới, số điểm kỹ năng nhận được
   void Function(int newLevel, int skillPointsGained)? onLevelUp;
@@ -13,10 +14,12 @@ class ExpManager {
     int initialLevel = 1,
     int initialExp = 0,
     int initialSkillPoints = 0,
+    int initialAttributePoints = 0,
     this.onLevelUp,
   })  : _currentLevel = initialLevel.clamp(GameConstants.minLevel, GameConstants.maxLevel),
         _currentExp = initialExp,
-        _skillPoints = initialSkillPoints;
+        _skillPoints = initialSkillPoints,
+        _attributePoints = initialAttributePoints;
 
   /// Bảng EXP yêu cầu từ cấp hiện tại lên cấp tiếp theo
   /// Chỉ số index i tương ứng với cấp độ (1 -> 24)
@@ -50,6 +53,7 @@ class ExpManager {
   int get currentLevel => _currentLevel;
   int get currentExp => _currentExp;
   int get skillPoints => _skillPoints;
+  int get attributePoints => _attributePoints;
   bool get isMaxLevel => _currentLevel >= GameConstants.maxLevel;
 
   /// Lấy lượng EXP yêu cầu để từ cấp hiện tại lên cấp tiếp theo
@@ -79,6 +83,7 @@ class ExpManager {
       _currentExp -= required; // Chuyển phần dư sang mốc mới
       _currentLevel++;
       _skillPoints++; // Thưởng 1 điểm kỹ năng
+      _attributePoints += 3; // Thưởng 3 điểm tiềm năng
 
       onLevelUp?.call(_currentLevel, 1);
     }
@@ -98,10 +103,27 @@ class ExpManager {
     return false;
   }
 
+  /// Sử dụng điểm tiềm năng
+  bool useAttributePoint() {
+    if (_attributePoints > 0) {
+      _attributePoints--;
+      return true;
+    }
+    return false;
+  }
+
+  /// Thêm điểm tiềm năng trực tiếp (dành cho phần thưởng/test)
+  void addAttributePoints(int amount) {
+    if (amount > 0) {
+      _attributePoints += amount;
+    }
+  }
+
   /// Reset tiến trình
-  void reset({int level = 1, int exp = 0, int skillPoints = 0}) {
+  void reset({int level = 1, int exp = 0, int skillPoints = 0, int attributePoints = 0}) {
     _currentLevel = level;
     _currentExp = exp;
     _skillPoints = skillPoints;
+    _attributePoints = attributePoints;
   }
 }

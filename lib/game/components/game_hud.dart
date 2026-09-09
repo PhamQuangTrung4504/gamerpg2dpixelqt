@@ -17,12 +17,14 @@ class GameHud extends PositionComponent with HasGameReference<SurvivalGame> {
   SpriteComponent? _hudBarBg;
   SpriteComponent? _expBarBg;
 
-  // Nút tấn công & kỹ năng
+  // Nút tấn công & kỹ năng & chức năng
   HudActionButton? _attackBtn;
   HudActionButton? _skill1Btn;
   HudActionButton? _skill2Btn;
   HudActionButton? _skill3Btn;
   HudActionButton? _inventoryBtn;
+  HudActionButton? _skillTreeBtn;
+  HudActionButton? _statsBtn;
 
   final Paint _hpFillPaint = Paint()..color = const Color(0xFFE53935);
   final Paint _mpFillPaint = Paint()..color = const Color(0xFF1E88E5);
@@ -186,7 +188,7 @@ class GameHud extends PositionComponent with HasGameReference<SurvivalGame> {
       onPressed: () => game.player.useSkill3(),
     );
 
-    // 8. Nút Rương Đồ mở Túi Đồ (Góc trên bên phải màn hình)
+    // 8. Ba nút chức năng góc trên bên phải màn hình (Rương đồ, Kỹ năng, Thuộc tính)
     final chestSprite = await game.loadSprite(AssetPaths.iconInventory);
     _inventoryBtn = HudActionButton(
       sprite: chestSprite,
@@ -194,10 +196,28 @@ class GameHud extends PositionComponent with HasGameReference<SurvivalGame> {
       onPressed: () => game.openInventory(),
     );
 
+    final skillTreeSprite = await game.loadSprite(AssetPaths.iconSkill);
+    _skillTreeBtn = HudActionButton(
+      sprite: skillTreeSprite,
+      size: Vector2.all(36.0),
+      onPressed: () => game.openSkillTree(),
+      hasNotification: () => game.player.expManager.skillPoints > 0,
+    );
+
+    final statsSprite = await game.loadSprite(AssetPaths.iconStats);
+    _statsBtn = HudActionButton(
+      sprite: statsSprite,
+      size: Vector2.all(36.0),
+      onPressed: () => game.openStats(),
+      hasNotification: () => game.player.attributePoints > 0,
+    );
+
     add(_attackBtn!);
     add(_skill1Btn!);
     add(_skill2Btn!);
     add(_skill3Btn!);
+    add(_statsBtn!);
+    add(_skillTreeBtn!);
     add(_inventoryBtn!);
 
     _isInitialized = true;
@@ -225,10 +245,27 @@ class GameHud extends PositionComponent with HasGameReference<SurvivalGame> {
     final screenSize = game.size;
     if (screenSize.x <= 0 || screenSize.y <= 0) return;
 
-    // Nút rương đồ ở góc trên bên phải: cách mép phải 24px, mép trên 20px
+    // 3 nút chức năng ở góc trên bên phải: xếp thẳng hàng ngang
+    // Từ phải sang trái: Rương đồ, Kỹ năng, Thuộc tính
+    const topMargin = 20.0;
+    const btnSize = 36.0;
+    const rightMargin = 24.0;
+    const btnGap = 8.0;
+    const centerY = topMargin + btnSize / 2; // 38.0
+
     if (_inventoryBtn != null) {
-      _inventoryBtn!.size = Vector2.all(36.0);
-      _inventoryBtn!.position = Vector2(screenSize.x - 24 - 18, 20 + 18);
+      _inventoryBtn!.size = Vector2.all(btnSize);
+      _inventoryBtn!.position = Vector2(screenSize.x - rightMargin - btnSize / 2, centerY);
+    }
+
+    if (_skillTreeBtn != null) {
+      _skillTreeBtn!.size = Vector2.all(btnSize);
+      _skillTreeBtn!.position = Vector2(screenSize.x - rightMargin - btnSize * 1.5 - btnGap, centerY);
+    }
+
+    if (_statsBtn != null) {
+      _statsBtn!.size = Vector2.all(btnSize);
+      _statsBtn!.position = Vector2(screenSize.x - rightMargin - btnSize * 2.5 - btnGap * 2, centerY);
     }
 
     // Nút đánh thường: tăng 20% lên 67px, cách mép phải và dưới 42px
@@ -309,15 +346,28 @@ class GameHud extends PositionComponent with HasGameReference<SurvivalGame> {
   }
 }
 
-/// Nút HUD tương tác có hiệu ứng nhấp
+/// Nút HUD tương tác có hiệu ứng nhấp và chấm đỏ thông báo
 class HudActionButton extends SpriteComponent with TapCallbacks {
   final VoidCallback onPressed;
   final double Function()? cooldownRemaining;
   final double totalCooldown;
+  final bool Function()? hasNotification;
+
+  double _blinkTimer = 0.0;
+  bool _blinkVisible = true;
 
   final Paint _cooldownOverlayPaint = Paint()
     ..color = const Color(0x99000000)
     ..style = PaintingStyle.fill;
+
+  final Paint _badgePaint = Paint()
+    ..color = const Color(0xFFFF1744)
+    ..style = PaintingStyle.fill;
+
+  final Paint _badgeBorderPaint = Paint()
+    ..color = Colors.white
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.5;
 
   HudActionButton({
     required Sprite sprite,
@@ -325,11 +375,27 @@ class HudActionButton extends SpriteComponent with TapCallbacks {
     required this.onPressed,
     this.cooldownRemaining,
     this.totalCooldown = 1.0,
+    this.hasNotification,
   }) : super(
           sprite: sprite,
           size: size,
           anchor: Anchor.center,
         );
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    if (hasNotification?.call() == true) {
+      _blinkTimer += dt;
+      if (_blinkTimer >= 0.4) {
+        _blinkTimer = 0.0;
+        _blinkVisible = !_blinkVisible;
+      }
+    } else {
+      _blinkVisible = false;
+      _blinkTimer = 0.0;
+    }
+  }
 
   @override
   void render(Canvas canvas) {
@@ -361,6 +427,13 @@ class HudActionButton extends SpriteComponent with TapCallbacks {
         canvas,
         Offset((size.x - tp.width) / 2, (size.y - tp.height) / 2),
       );
+    }
+
+    // Chấm đỏ thông báo (badge notification) nhấp nháy trên góc phải trên của nút
+    if (hasNotification?.call() == true && _blinkVisible) {
+      final badgeCenter = Offset(size.x - 4, 4);
+      canvas.drawCircle(badgeCenter, 4.5, _badgePaint);
+      canvas.drawCircle(badgeCenter, 4.5, _badgeBorderPaint);
     }
   }
 

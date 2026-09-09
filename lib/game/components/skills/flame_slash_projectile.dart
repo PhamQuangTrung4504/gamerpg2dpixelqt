@@ -19,10 +19,12 @@ class FlameSlashProjectileComponent extends SpriteComponent with HasGameReferenc
   double _traveledDistance = 0.0;
   double get traveledDistance => _traveledDistance;
   final Set<MonsterComponent> _hitMonsters = {};
+  final int skillLevel;
 
   FlameSlashProjectileComponent({
     required Vector2 startPosition,
     required Vector2 flightDirection,
+    this.skillLevel = 1,
   })  : direction = flightDirection.normalized(),
         super(
           position: startPosition.clone(),
@@ -74,7 +76,7 @@ class FlameSlashProjectileComponent extends SpriteComponent with HasGameReferenc
   void _checkPiercingCollisions(double currentScale) {
     if (!isMounted) return;
     final player = game.player;
-    final skillData = SkillCatalog.lietHoaDoatMenh.getDataForLevel(1);
+    final skillData = SkillCatalog.lietHoaDoatMenh.getDataForLevel(skillLevel);
 
     // Hitbox bán nguyệt tự động mở rộng theo scale (từ 20px nở lên đến 44px)
     final collisionRadius = 20.0 * currentScale;

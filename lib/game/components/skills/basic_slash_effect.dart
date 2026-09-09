@@ -11,12 +11,14 @@ import '../monster_component.dart';
 /// Hiệu ứng chém hình bán nguyệt của đòn đánh thường (Cận chiến)
 class BasicSlashEffectComponent extends SpriteComponent with HasGameReference<SurvivalGame> {
   final GameDirection direction;
+  final int skillLevel;
   static const double effectDuration = 0.22;
   double _elapsed = 0.0;
 
   BasicSlashEffectComponent({
     required Vector2 playerPosition,
     required this.direction,
+    this.skillLevel = 1,
   }) : super(
           size: Vector2.all(32.0),
           anchor: Anchor.center,
@@ -51,7 +53,7 @@ class BasicSlashEffectComponent extends SpriteComponent with HasGameReference<Su
   void _dealDamageToNearbyMonsters() {
     final player = game.player;
     final dirVec = direction.toVector2();
-    final skillData = SkillCatalog.danhThuong.getDataForLevel(1);
+    final skillData = SkillCatalog.danhThuong.getDataForLevel(skillLevel);
 
     final monsters = game.world.children.whereType<MonsterComponent>().toList();
     for (final monster in monsters) {

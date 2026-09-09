@@ -11,7 +11,10 @@ import 'package:gamerpg2dpixelqt/game/components/skills/flame_slash_projectile.d
 import 'package:gamerpg2dpixelqt/game/components/skills/flying_sword_projectile.dart';
 import 'package:gamerpg2dpixelqt/game/components/skills/shield_effect.dart';
 import 'package:gamerpg2dpixelqt/game/components/skills/sword_storm_area.dart';
+import 'package:gamerpg2dpixelqt/constants/player_state.dart';
+import 'package:gamerpg2dpixelqt/game/components/equipment_layer_component.dart';
 import 'package:gamerpg2dpixelqt/models/character_stats.dart';
+import 'package:gamerpg2dpixelqt/models/equipment.dart';
 import 'package:gamerpg2dpixelqt/models/monster.dart';
 import 'package:gamerpg2dpixelqt/models/skill.dart';
 
@@ -120,9 +123,10 @@ void main() {
     test('Dynamic Equipment render priorities match direction specifications', () {
       // 1. Khi hướng down, left, right (nhìn phía trước / góc nghiêng):
       for (final dir in [GameDirection.down, GameDirection.left, GameDirection.right]) {
-        // Cánh & Kiếm sau lưng: priority = 10 (dưới thân)
+        // Cánh nằm sau cùng: priority = 5
+        expect(EquipmentType.wings.getRenderPriority(dir), equals(5));
+        // Kiếm đè lên cánh, dưới thân: priority = 10
         expect(EquipmentType.sword.getRenderPriority(dir), equals(10));
-        expect(EquipmentType.wings.getRenderPriority(dir), equals(10));
 
         // Quần, Giáp, Giày, Mũ, Phụ kiện: priority = 30 (đè lên thân)
         expect(EquipmentType.pants.getRenderPriority(dir), equals(30));
@@ -134,15 +138,20 @@ void main() {
       }
 
       // 2. Khi hướng up (phia_tren - nhìn từ sau lưng):
-      // Quần, Giáp, Giày, Mũ: priority = 20
+      // Quần, Giáp, Giày, Mũ, Dây chuyền: priority = 20
       expect(EquipmentType.pants.getRenderPriority(GameDirection.up), equals(20));
       expect(EquipmentType.armor.getRenderPriority(GameDirection.up), equals(20));
       expect(EquipmentType.shoes.getRenderPriority(GameDirection.up), equals(20));
       expect(EquipmentType.helmet.getRenderPriority(GameDirection.up), equals(20));
+      expect(EquipmentType.necklace.getRenderPriority(GameDirection.up), equals(20));
 
-      // Cánh & Kiếm: priority = 40 (vẽ đè lên trên cùng để lộ rõ kiếm/cánh sau lưng)
+      // Cánh = 35 (đè lên lưng áo)
+      expect(EquipmentType.wings.getRenderPriority(GameDirection.up), equals(35));
+      // Kiếm = 40 (vẽ đè lên trên cả Cánh để lộ rõ thanh kiếm sau lưng)
       expect(EquipmentType.sword.getRenderPriority(GameDirection.up), equals(40));
-      expect(EquipmentType.wings.getRenderPriority(GameDirection.up), equals(40));
+
+      // Kính = 0 (ẩn hoàn toàn khi nhìn từ sau lưng)
+      expect(EquipmentType.glasses.getRenderPriority(GameDirection.up), equals(0));
     });
 
     test('Virtual Joystick dimensions increased by 15%', () {
@@ -159,6 +168,43 @@ void main() {
       expect(style.fontSize, equals(14.0));
       expect(style.color, equals(const Color(0xFFFFD54F)));
       expect(style.fontFamily, contains('VT323'));
+    });
+
+    test('EquipmentLayerComponent hides glasses on GameDirection.up and shows on others', () {
+      final glassesItem = EquipmentCatalog.kinh;
+      final layer = EquipmentLayerComponent(equipment: glassesItem);
+
+      // Facing down: visible
+      layer.updateStateAndDirection(state: CharacterState.idle, direction: GameDirection.down);
+      expect(layer.isVisible, isTrue);
+
+      // Facing left: visible
+      layer.updateStateAndDirection(state: CharacterState.move, direction: GameDirection.left);
+      expect(layer.isVisible, isTrue);
+
+      // Facing right: visible
+      layer.updateStateAndDirection(state: CharacterState.move, direction: GameDirection.right);
+      expect(layer.isVisible, isTrue);
+
+      // Facing up: completely hidden
+      layer.updateStateAndDirection(state: CharacterState.move, direction: GameDirection.up);
+      expect(layer.isVisible, isFalse);
+
+      // Back to down: visible again
+      layer.updateStateAndDirection(state: CharacterState.idle, direction: GameDirection.down);
+      expect(layer.isVisible, isTrue);
+    });
+
+    test('Sword priority is strictly higher than Wings priority across all directions', () {
+      for (final dir in GameDirection.values) {
+        final swordPriority = EquipmentType.sword.getRenderPriority(dir);
+        final wingsPriority = EquipmentType.wings.getRenderPriority(dir);
+        expect(
+          swordPriority,
+          greaterThan(wingsPriority),
+          reason: 'Sword ($swordPriority) must render over Wings ($wingsPriority) in direction $dir',
+        );
+      }
     });
   });
 }

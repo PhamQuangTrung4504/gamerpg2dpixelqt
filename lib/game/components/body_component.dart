@@ -66,6 +66,7 @@ class BodyComponent extends SpriteAnimationComponent with HasGameReference<Survi
     required CharacterState state,
     required GameDirection direction,
   }) {
+    priority = direction == GameDirection.up ? 10 : 20;
     if (_state == state && _direction == direction) return;
     _state = state;
     _direction = direction;

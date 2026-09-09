@@ -109,10 +109,25 @@ class SurvivalGame extends FlameGame with HasCollisionDetection, KeyboardEvents 
         toggleInventory();
         return KeyEventResult.handled;
       }
+      // Bật/tắt bảng thuộc tính: Phím C
+      if (event.logicalKey == LogicalKeyboardKey.keyC) {
+        toggleStats();
+        return KeyEventResult.handled;
+      }
+      // Bật/tắt bảng kỹ năng: Phím V
+      if (event.logicalKey == LogicalKeyboardKey.keyV) {
+        toggleSkillTree();
+        return KeyEventResult.handled;
+      }
     }
 
     return KeyEventResult.ignored;
   }
+
+  bool get isAnyModalOpen =>
+      overlays.isActive('inventory') ||
+      overlays.isActive('StatsOverlay') ||
+      overlays.isActive('SkillOverlay');
 
   /// Mở giao diện túi đồ và tạm dừng vòng lặp game
   void openInventory() {
@@ -122,11 +137,13 @@ class SurvivalGame extends FlameGame with HasCollisionDetection, KeyboardEvents 
     }
   }
 
-  /// Đóng giao diện túi đồ và tiếp tục trò chơi
+  /// Đóng giao diện túi đồ và tiếp tục trò chơi (nếu không còn bảng nào mở)
   void closeInventory() {
     if (overlays.isActive('inventory')) {
       overlays.remove('inventory');
-      resumeEngine();
+      if (!isAnyModalOpen) {
+        resumeEngine();
+      }
     }
   }
 
@@ -136,6 +153,60 @@ class SurvivalGame extends FlameGame with HasCollisionDetection, KeyboardEvents 
       closeInventory();
     } else {
       openInventory();
+    }
+  }
+
+  /// Mở giao diện bảng thuộc tính nhân vật
+  void openStats() {
+    if (!overlays.isActive('StatsOverlay')) {
+      pauseEngine();
+      overlays.add('StatsOverlay');
+    }
+  }
+
+  /// Đóng giao diện bảng thuộc tính nhân vật
+  void closeStats() {
+    if (overlays.isActive('StatsOverlay')) {
+      overlays.remove('StatsOverlay');
+      if (!isAnyModalOpen) {
+        resumeEngine();
+      }
+    }
+  }
+
+  /// Bật/tắt nhanh bảng thuộc tính
+  void toggleStats() {
+    if (overlays.isActive('StatsOverlay')) {
+      closeStats();
+    } else {
+      openStats();
+    }
+  }
+
+  /// Mở giao diện bảng nâng cấp kỹ năng
+  void openSkillTree() {
+    if (!overlays.isActive('SkillOverlay')) {
+      pauseEngine();
+      overlays.add('SkillOverlay');
+    }
+  }
+
+  /// Đóng giao diện bảng nâng cấp kỹ năng
+  void closeSkillTree() {
+    if (overlays.isActive('SkillOverlay')) {
+      overlays.remove('SkillOverlay');
+      if (!isAnyModalOpen) {
+        resumeEngine();
+      }
+    }
+  }
+
+  /// Bật/tắt nhanh bảng kỹ năng
+  void toggleSkillTree() {
+    if (overlays.isActive('SkillOverlay')) {
+      closeSkillTree();
+    } else {
+      openSkillTree();
     }
   }
 

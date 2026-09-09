@@ -6,6 +6,7 @@ import '../../constants/equipment_types.dart';
 import '../../constants/game_constants.dart';
 import '../../constants/player_state.dart';
 import '../../core/exp_manager.dart';
+import '../../models/attribute_type.dart';
 import '../../models/character_stats.dart';
 import '../../models/equipment.dart';
 import '../../models/skill.dart';
@@ -36,12 +37,22 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
   GameDirection _direction = GameDirection.down;
   CharacterState _state = CharacterState.idle;
 
+  // Chỉ số gốc (Base Stats) có thể cộng điểm tiềm năng
+  CharacterStats _baseStats = CharacterStats.initialBase;
   late CharacterStats _totalStats;
   double _currentHp = 100;
   double _currentMp = 100;
   int _gold = 0;
 
   late final ExpManager _expManager;
+
+  // Cấp độ của các kỹ năng (khởi đầu cấp 1)
+  final Map<String, int> _skillLevels = {
+    SkillCatalog.danhThuong.id: 1,
+    SkillCatalog.lietHoaDoatMenh.id: 1,
+    SkillCatalog.vanKiemQuyTong.id: 1,
+    SkillCatalog.nguKiemPhiKiem.id: 1,
+  };
 
   // Vector di chuyển từ input (Joystick hoặc Bàn phím)
   Vector2 velocity = Vector2.zero();
@@ -96,8 +107,58 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
   double get currentMp => _currentMp;
   int get gold => _gold;
   ExpManager get expManager => _expManager;
+  int get attributePoints => _expManager.attributePoints;
+  CharacterStats get baseStats => _baseStats;
   Map<EquipmentType, Equipment> get equippedItems => Map.unmodifiable(_equippedItems);
   List<Equipment> get inventory => List.unmodifiable(_inventory);
+
+  /// Nâng cấp thuộc tính bằng Điểm Tiềm Năng (+20 HP, +1 HP/s, +20 MP, +1 MP/s, +3 ATK, +1 DEF)
+  bool upgradeAttribute(AttributeType type) {
+    if (!_expManager.useAttributePoint()) return false;
+
+    switch (type) {
+      case AttributeType.maxHp:
+        _baseStats = _baseStats.copyWith(maxHp: _baseStats.maxHp + type.increaseAmount);
+        _currentHp += type.increaseAmount;
+      case AttributeType.hpRegen:
+        _baseStats = _baseStats.copyWith(hpRegen: _baseStats.hpRegen + type.increaseAmount);
+      case AttributeType.maxMp:
+        _baseStats = _baseStats.copyWith(maxMp: _baseStats.maxMp + type.increaseAmount);
+        _currentMp += type.increaseAmount;
+      case AttributeType.mpRegen:
+        _baseStats = _baseStats.copyWith(mpRegen: _baseStats.mpRegen + type.increaseAmount);
+      case AttributeType.attackPower:
+        _baseStats = _baseStats.copyWith(attackPower: _baseStats.attackPower + type.increaseAmount);
+      case AttributeType.defense:
+        _baseStats = _baseStats.copyWith(defense: _baseStats.defense + type.increaseAmount);
+    }
+
+    _recalculateStats();
+    notifyInventoryChanged();
+    return true;
+  }
+
+  /// Lấy cấp độ hiện tại của một kỹ năng
+  int getSkillLevel(String skillId) => _skillLevels[skillId] ?? 1;
+
+  /// Kiểm tra có thể nâng cấp kỹ năng hay không
+  bool canUpgradeSkill(Skill skill) {
+    final currentLevel = getSkillLevel(skill.id);
+    if (currentLevel >= skill.maxSkillLevel) return false;
+    if (_expManager.skillPoints <= 0) return false;
+    if (_expManager.currentLevel < skill.requiredCharacterLevel) return false;
+    return true;
+  }
+
+  /// Nâng cấp kỹ năng bằng Điểm Kỹ Năng
+  bool upgradeSkill(Skill skill) {
+    if (!canUpgradeSkill(skill)) return false;
+    if (!_expManager.useSkillPoint()) return false;
+
+    _skillLevels[skill.id] = getSkillLevel(skill.id) + 1;
+    notifyInventoryChanged();
+    return true;
+  }
 
   void notifyInventoryChanged() {
     inventoryNotifier.notify();
@@ -209,10 +270,14 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
       await add(layer);
       layer.updateStateAndDirection(state: _state, direction: _direction);
     }
+    _syncLayers();
 
     _recalculateStats();
     notifyInventoryChanged();
   }
+
+  /// Lấy component hiển thị của trang bị theo loại
+  EquipmentLayerComponent? getEquipmentLayer(EquipmentType type) => _equipmentLayers[type];
 
   /// Tháo trang bị theo loại
   void unequip(EquipmentType type) {
@@ -229,7 +294,7 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
 
   /// Tính toán lại toàn bộ chỉ số khi thay đổi trang bị hoặc kích hoạt buff
   void _recalculateStats() {
-    var combined = CharacterStats.initialBase;
+    var combined = _baseStats;
     for (final item in _equippedItems.values) {
       combined = combined + item.stats;
     }
@@ -253,7 +318,8 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
   bool performAttack() {
     if (attackCooldownRemaining > 0) return false;
 
-    final skillData = SkillCatalog.danhThuong.getDataForLevel(1);
+    final skillLevel = getSkillLevel(SkillCatalog.danhThuong.id);
+    final skillData = SkillCatalog.danhThuong.getDataForLevel(skillLevel);
     attackCooldownRemaining = skillData.cooldown;
 
     _state = CharacterState.attack;
@@ -266,6 +332,7 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
         BasicSlashEffectComponent(
           playerPosition: position,
           direction: _direction,
+          skillLevel: skillLevel,
         ),
       );
     }
@@ -275,7 +342,8 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
   /// Kỹ năng 1: Liệt Hỏa Đoạt Mệnh (Kiếm khí lửa xuyên thấu bay thẳng 250px)
   bool useSkill1() {
     if (skill1CooldownRemaining > 0) return false;
-    final skillData = SkillCatalog.lietHoaDoatMenh.getDataForLevel(1);
+    final skillLevel = getSkillLevel(SkillCatalog.lietHoaDoatMenh.id);
+    final skillData = SkillCatalog.lietHoaDoatMenh.getDataForLevel(skillLevel);
 
     if (!consumeMp(skillData.manaCost)) return false;
 
@@ -289,6 +357,7 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
         FlameSlashProjectileComponent(
           startPosition: position,
           flightDirection: _direction.toVector2(),
+          skillLevel: skillLevel,
         ),
       );
     }
@@ -298,7 +367,8 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
   /// Kỹ năng 2: Vạn Kiếm Quy Tông (Kiếm trận bán kính 90px, 3 đợt cự kiếm + làm chậm)
   bool useSkill2() {
     if (skill2CooldownRemaining > 0) return false;
-    final skillData = SkillCatalog.vanKiemQuyTong.getDataForLevel(1);
+    final skillLevel = getSkillLevel(SkillCatalog.vanKiemQuyTong.id);
+    final skillData = SkillCatalog.vanKiemQuyTong.getDataForLevel(skillLevel);
 
     if (!consumeMp(skillData.manaCost)) return false;
 
@@ -311,7 +381,10 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
       // Tìm vị trí quái gần nhất trong vòng 200px hoặc cách trước mặt 80px
       final targetPos = _findNearestMonsterTarget() ?? (position + _direction.toVector2() * 80.0);
       game.world.add(
-        SwordStormAreaComponent(centerPosition: targetPos),
+        SwordStormAreaComponent(
+          centerPosition: targetPos,
+          skillLevel: skillLevel,
+        ),
       );
     }
     return true;
@@ -320,7 +393,8 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
   /// Kỹ năng 3: Ngự Kiếm Hộ Thể / Phi Kiếm (Khiên xoay buff thủ 3s sau đó phóng 6 phi kiếm)
   bool useSkill3() {
     if (skill3CooldownRemaining > 0) return false;
-    final skillData = SkillCatalog.nguKiemPhiKiem.getDataForLevel(1);
+    final skillLevel = getSkillLevel(SkillCatalog.nguKiemPhiKiem.id);
+    final skillData = SkillCatalog.nguKiemPhiKiem.getDataForLevel(skillLevel);
 
     if (!consumeMp(skillData.manaCost)) return false;
 
@@ -330,7 +404,9 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
     _syncLayers();
 
     if (isMounted) {
-      game.world.add(ShieldBuffEffectComponent());
+      game.world.add(
+        ShieldBuffEffectComponent(skillLevel: skillLevel),
+      );
     }
     return true;
   }
@@ -460,8 +536,8 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
     scale.y = 1.0;
 
     // Cập nhật Dynamic Priority cho Thân theo hướng nhìn:
-    // - Khi hướng 'up' (nhìn từ sau lưng): Thân = 10, Quần/Giáp/Mũ = 20, Cánh & Kiếm = 40 (đè lên trên cùng)
-    // - Khi hướng 'down', 'left', 'right' (nhìn phía trước / nghiêng): Cánh & Kiếm = 10, Thân = 20, Trang phục = 30
+    // - Khi hướng 'up' (nhìn từ sau lưng): Thân = 10, Quần/Giáp/Mũ = 20, Cánh = 35, Kiếm = 40 (đè lên Cánh)
+    // - Khi hướng 'down', 'left', 'right' (nhìn phía trước / nghiêng): Cánh = 5, Kiếm = 10, Thân = 20, Trang phục = 30
     _body.priority = _direction == GameDirection.up ? 10 : 20;
 
     _body.updateStateAndDirection(state: _state, direction: _direction);
