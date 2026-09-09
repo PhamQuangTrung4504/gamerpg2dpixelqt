@@ -73,6 +73,9 @@ class EquipmentLayerComponent extends SpriteAnimationComponent with HasGameRefer
     required CharacterState state,
     required GameDirection direction,
   }) {
+    // Cập nhật Z-Index / Dynamic Priority theo hướng nhìn
+    priority = equipment.type.getRenderPriority(direction);
+
     if (_state == state && _direction == direction) return;
     _state = state;
     _direction = direction;

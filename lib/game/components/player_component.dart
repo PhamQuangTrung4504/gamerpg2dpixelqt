@@ -377,6 +377,11 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
     }
     scale.y = 1.0;
 
+    // Cập nhật Dynamic Priority cho Thân theo hướng nhìn:
+    // - Khi hướng 'up' (nhìn từ sau lưng): Thân = 10, Quần/Giáp/Mũ = 20, Cánh & Kiếm = 40 (đè lên trên cùng)
+    // - Khi hướng 'down', 'left', 'right' (nhìn phía trước / nghiêng): Cánh & Kiếm = 10, Thân = 20, Trang phục = 30
+    _body.priority = _direction == GameDirection.up ? 10 : 20;
+
     _body.updateStateAndDirection(state: _state, direction: _direction);
     for (final layer in _equipmentLayers.values) {
       layer.updateStateAndDirection(state: _state, direction: _direction);

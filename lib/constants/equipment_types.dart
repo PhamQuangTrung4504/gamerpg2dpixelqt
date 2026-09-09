@@ -1,3 +1,5 @@
+import 'direction.dart';
+
 /// Các loại trang bị trong game
 enum EquipmentType {
   sword,       // Kiếm (Vũ khí)
@@ -68,31 +70,53 @@ enum EquipmentType {
   bool get hasVisualLayer =>
       this != EquipmentType.ring && this != EquipmentType.tome;
 
-  /// Thứ tự vẽ (Z-Index / Render Priority) tương đối giữa thân và các lớp trang bị
-  /// - 1. Lớp sau lưng: Kiếm (5), Cánh (10)
-  /// - 2. Thân nhân vật chính: BodyComponent (20)
-  /// - 3. Lớp phụ kiện sát người: Dây chuyền (25), Kính (30)
-  /// - 4. Lớp trang phục bên ngoài: Áo giáp, Mũ, Quần, Giày (40)
-  int get renderPriority {
-    switch (this) {
-      case EquipmentType.sword:
-        return 5; // Kiếm nằm sau lưng/sau nhân vật
-      case EquipmentType.wings:
-        return 10; // Cánh nằm sau nhân vật, trước kiếm
-      case EquipmentType.necklace:
-        return 25; // Dây chuyền sát người
-      case EquipmentType.glasses:
-        return 30; // Kính đeo trên mặt
-      case EquipmentType.armor:
-      case EquipmentType.helmet:
-      case EquipmentType.pants:
-      case EquipmentType.shoes:
-        return 40; // Trang phục ngoài cùng phủ lên thân và phụ kiện
-      case EquipmentType.ring:
-      case EquipmentType.tome:
-        return 0;
+  /// Thứ tự vẽ (Z-Index / Dynamic Priority) theo hướng nhìn của nhân vật:
+  /// - Hướng down, left, right (nhìn phía trước / nghiêng):
+  ///   + Cánh & Kiếm sau lưng: priority = 10 (dưới thân)
+  ///   + Thân (Body): priority = 20
+  ///   + Quần, Giáp, Giày, Mũ, Phụ kiện: priority = 30 (đè lên thân)
+  /// - Hướng up (nhìn từ sau lưng):
+  ///   + Thân (Body): priority = 10
+  ///   + Quần, Giáp, Giày, Mũ: priority = 20
+  ///   + Cánh & Kiếm: priority = 40 (vẽ đè lên trên cùng để lộ rõ kiếm/cánh sau lưng)
+  int getRenderPriority(GameDirection direction) {
+    if (direction == GameDirection.up) {
+      switch (this) {
+        case EquipmentType.sword:
+        case EquipmentType.wings:
+          return 40;
+        case EquipmentType.pants:
+        case EquipmentType.armor:
+        case EquipmentType.shoes:
+        case EquipmentType.helmet:
+        case EquipmentType.glasses:
+        case EquipmentType.necklace:
+          return 20;
+        case EquipmentType.ring:
+        case EquipmentType.tome:
+          return 0;
+      }
+    } else {
+      switch (this) {
+        case EquipmentType.sword:
+        case EquipmentType.wings:
+          return 10;
+        case EquipmentType.pants:
+        case EquipmentType.armor:
+        case EquipmentType.shoes:
+        case EquipmentType.helmet:
+        case EquipmentType.glasses:
+        case EquipmentType.necklace:
+          return 30;
+        case EquipmentType.ring:
+        case EquipmentType.tome:
+          return 0;
+      }
     }
   }
+
+  /// Priority mặc định khi nhìn thẳng phía trước (hướng down)
+  int get renderPriority => getRenderPriority(GameDirection.down);
 }
 
 /// Chất liệu / Phẩm chất trang bị

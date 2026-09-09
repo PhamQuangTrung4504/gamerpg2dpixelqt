@@ -80,11 +80,10 @@ class GameHud extends PositionComponent with HasGameReference<SurvivalGame> {
     );
     add(_expBarBg!);
 
-    // 3. Text Level - Căn chính giữa tâm icon huy hiệu góc trái khung HUD
-    // Huy hiệu có tâm tại x: 16.5, y: 24 tính từ gốc HUD
+    // 3. Text Level - Căn chính giữa ô badge bên góc trái thanh EXP (tách khỏi cụm icon tím phía trên)
     _levelText = TextComponent(
       text: 'Lv. 1',
-      position: Vector2(hudOriginX + 16.5, hudOriginY + hudHeight / 2),
+      position: Vector2(expOriginX + 22.0, expOriginY + expHeight / 2),
       anchor: Anchor.center,
       textRenderer: TextPaint(
         style: GameTypography.pixel(
@@ -148,7 +147,7 @@ class GameHud extends PositionComponent with HasGameReference<SurvivalGame> {
     );
     add(_expText!);
 
-    // 7. Các nút Tấn công & Kỹ năng (Neo góc dưới bên phải)
+    // 7. Các nút Tấn công & Kỹ năng (Neo góc dưới bên phải, tăng kích thước 20%)
     final attackSprite = await game.loadSprite(AssetPaths.attackButton);
     final s1Sprite = await game.loadSprite(AssetPaths.skill1Button);
     final s2Sprite = await game.loadSprite(AssetPaths.skill2Button);
@@ -156,7 +155,7 @@ class GameHud extends PositionComponent with HasGameReference<SurvivalGame> {
 
     _attackBtn = HudActionButton(
       sprite: attackSprite,
-      size: Vector2(56, 56),
+      size: Vector2.all(67.0),
       cooldownRemaining: () => game.player.attackCooldownRemaining,
       totalCooldown: 0.40,
       onPressed: () => game.player.performAttack(),
@@ -164,7 +163,7 @@ class GameHud extends PositionComponent with HasGameReference<SurvivalGame> {
 
     _skill1Btn = HudActionButton(
       sprite: s1Sprite,
-      size: Vector2(40, 40),
+      size: Vector2.all(48.0),
       cooldownRemaining: () => game.player.skill1CooldownRemaining,
       totalCooldown: 3.5,
       onPressed: () => game.player.useSkill1(),
@@ -172,7 +171,7 @@ class GameHud extends PositionComponent with HasGameReference<SurvivalGame> {
 
     _skill2Btn = HudActionButton(
       sprite: s2Sprite,
-      size: Vector2(40, 40),
+      size: Vector2.all(48.0),
       cooldownRemaining: () => game.player.skill2CooldownRemaining,
       totalCooldown: 7.0,
       onPressed: () => game.player.useSkill2(),
@@ -180,7 +179,7 @@ class GameHud extends PositionComponent with HasGameReference<SurvivalGame> {
 
     _skill3Btn = HudActionButton(
       sprite: s3Sprite,
-      size: Vector2(40, 40),
+      size: Vector2.all(48.0),
       cooldownRemaining: () => game.player.skill3CooldownRemaining,
       totalCooldown: 12.0,
       onPressed: () => game.player.useSkill3(),
@@ -216,10 +215,10 @@ class GameHud extends PositionComponent with HasGameReference<SurvivalGame> {
     final screenSize = game.size;
     if (screenSize.x <= 0 || screenSize.y <= 0) return;
 
-    // Nút đánh thường (56x56px, anchor: center), cách mép phải 40px, mép dưới 40px
-    const attackBtnSize = 56.0;
-    const attackRadius = attackBtnSize / 2; // 28.0
-    const margin = 40.0;
+    // Nút đánh thường: tăng 20% lên 67px, cách mép phải và dưới 42px
+    const attackBtnSize = 67.0;
+    const attackRadius = attackBtnSize / 2; // 33.5px
+    const margin = 42.0;
 
     final attackCenter = Vector2(
       screenSize.x - margin - attackRadius,
@@ -229,9 +228,9 @@ class GameHud extends PositionComponent with HasGameReference<SurvivalGame> {
     _attackBtn!.size = Vector2.all(attackBtnSize);
     _attackBtn!.position = attackCenter;
 
-    // 3 nút kỹ năng (40x40px) xếp hình cánh cung quanh nút tấn công
-    const skillBtnSize = 40.0;
-    const arcRadius = 68.0;
+    // 3 nút kỹ năng: tăng 20% lên 48px, xếp hình cánh cung quanh nút tấn công
+    const skillBtnSize = 48.0;
+    const arcRadius = 82.0; // Bán kính cánh cung cách đều tránh đè viền
 
     _skill1Btn!.size = Vector2.all(skillBtnSize);
     _skill1Btn!.position = attackCenter + Vector2(-arcRadius, 6);

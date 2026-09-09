@@ -4,9 +4,9 @@ import '../survival_game.dart';
 
 /// Joystick điều khiển ảo căn chỉnh chuẩn xác theo assets và responsive theo màn hình
 class GameJoystick extends JoystickComponent {
-  static const double bgSize = 72.0;
-  static const double bgRadius = bgSize / 2; // 36.0
-  static const double knobSize = 28.0;
+  static const double bgSize = 83.0;
+  static const double bgRadius = 41.4; // Tăng 15% (36px -> 41.4px)
+  static const double knobSize = 32.0; // Tăng 15% (28px -> 32px)
   static const double defaultMargin = 40.0;
 
   GameJoystick({
@@ -23,7 +23,7 @@ class GameJoystick extends JoystickComponent {
             size: Vector2.all(bgSize),
             anchor: Anchor.topLeft,
           ),
-          knobRadius: bgRadius, // Giới hạn tầm di chuyển không vượt quá bán kính vòng
+          knobRadius: bgRadius, // Bán kính di chuyển 41.4px
           anchor: Anchor.center,
           priority: 100,
         );

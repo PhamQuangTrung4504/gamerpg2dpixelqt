@@ -1,11 +1,12 @@
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gamerpg2dpixelqt/constants/direction.dart';
 import 'package:gamerpg2dpixelqt/constants/equipment_types.dart';
 import 'package:gamerpg2dpixelqt/core/combat_calculator.dart';
 import 'package:gamerpg2dpixelqt/core/game_typography.dart';
-import 'package:gamerpg2dpixelqt/game/components/body_component.dart';
 import 'package:gamerpg2dpixelqt/game/components/game_hud.dart';
+import 'package:gamerpg2dpixelqt/game/components/joystick.dart';
 import 'package:gamerpg2dpixelqt/game/components/skills/flame_slash_projectile.dart';
 import 'package:gamerpg2dpixelqt/game/components/skills/flying_sword_projectile.dart';
 import 'package:gamerpg2dpixelqt/game/components/skills/shield_effect.dart';
@@ -116,28 +117,38 @@ void main() {
       expect(GameHud.expSlotX, equals(65.0));
     });
 
-    test('Equipment render priorities match design specifications', () {
-      // 1. Sau lưng: Kiếm (5), Cánh (10)
-      expect(EquipmentType.sword.renderPriority, equals(5));
-      expect(EquipmentType.wings.renderPriority, equals(10));
+    test('Dynamic Equipment render priorities match direction specifications', () {
+      // 1. Khi hướng down, left, right (nhìn phía trước / góc nghiêng):
+      for (final dir in [GameDirection.down, GameDirection.left, GameDirection.right]) {
+        // Cánh & Kiếm sau lưng: priority = 10 (dưới thân)
+        expect(EquipmentType.sword.getRenderPriority(dir), equals(10));
+        expect(EquipmentType.wings.getRenderPriority(dir), equals(10));
 
-      // 2. Thân nhân vật: BodyComponent (20)
-      final body = BodyComponent();
-      expect(body.priority, equals(20));
+        // Quần, Giáp, Giày, Mũ, Phụ kiện: priority = 30 (đè lên thân)
+        expect(EquipmentType.pants.getRenderPriority(dir), equals(30));
+        expect(EquipmentType.armor.getRenderPriority(dir), equals(30));
+        expect(EquipmentType.shoes.getRenderPriority(dir), equals(30));
+        expect(EquipmentType.helmet.getRenderPriority(dir), equals(30));
+        expect(EquipmentType.necklace.getRenderPriority(dir), equals(30));
+        expect(EquipmentType.glasses.getRenderPriority(dir), equals(30));
+      }
 
-      // 3. Phụ kiện sát người: Dây chuyền (25), Kính (30)
-      expect(EquipmentType.necklace.renderPriority, equals(25));
-      expect(EquipmentType.glasses.renderPriority, equals(30));
+      // 2. Khi hướng up (phia_tren - nhìn từ sau lưng):
+      // Quần, Giáp, Giày, Mũ: priority = 20
+      expect(EquipmentType.pants.getRenderPriority(GameDirection.up), equals(20));
+      expect(EquipmentType.armor.getRenderPriority(GameDirection.up), equals(20));
+      expect(EquipmentType.shoes.getRenderPriority(GameDirection.up), equals(20));
+      expect(EquipmentType.helmet.getRenderPriority(GameDirection.up), equals(20));
 
-      // 4. Trang phục ngoài cùng: Áo giáp (40), Mũ (40), Quần (40), Giày (40)
-      expect(EquipmentType.armor.renderPriority, equals(40));
-      expect(EquipmentType.helmet.renderPriority, equals(40));
-      expect(EquipmentType.pants.renderPriority, equals(40));
-      expect(EquipmentType.shoes.renderPriority, equals(40));
+      // Cánh & Kiếm: priority = 40 (vẽ đè lên trên cùng để lộ rõ kiếm/cánh sau lưng)
+      expect(EquipmentType.sword.getRenderPriority(GameDirection.up), equals(40));
+      expect(EquipmentType.wings.getRenderPriority(GameDirection.up), equals(40));
+    });
 
-      // Xác nhận kiếm (5) và cánh (10) vẽ trước/dưới thân (20)
-      expect(EquipmentType.sword.renderPriority, lessThan(body.priority));
-      expect(EquipmentType.wings.renderPriority, lessThan(body.priority));
+    test('Virtual Joystick dimensions increased by 15%', () {
+      expect(GameJoystick.bgSize, equals(83.0));
+      expect(GameJoystick.bgRadius, equals(41.4));
+      expect(GameJoystick.knobSize, equals(32.0));
     });
 
     test('GameTypography creates pixel TextStyle with VT323 font family', () {
