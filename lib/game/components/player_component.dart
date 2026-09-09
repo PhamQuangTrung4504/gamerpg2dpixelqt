@@ -75,8 +75,10 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
   double _buffCritResistance = 0.0;
   double _buffDuration = 0.0;
 
-  PlayerComponent({Vector2? initialPosition})
-      : super(
+  PlayerComponent({
+    Vector2? initialPosition,
+    bool startWithSword = true,
+  })  : super(
           position: initialPosition ?? Vector2(GameConstants.mapWidth / 2, GameConstants.mapHeight / 2),
           size: GameConstants.characterSize,
           anchor: Anchor.center,
@@ -91,8 +93,10 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
       },
     );
 
-    // Mặc định trang bị kiếm gỗ cho nhân vật ban đầu
-    _equippedItems[EquipmentType.sword] = EquipmentCatalog.kiemGo;
+    // Trang bị kiếm gỗ cho nhân vật ban đầu nếu được kích hoạt
+    if (startWithSword) {
+      _equippedItems[EquipmentType.sword] = EquipmentCatalog.kiemGo;
+    }
     _gold = 0;
 
     _recalculateStats();

@@ -18,6 +18,7 @@ class DropItemComponent extends PositionComponent with HasGameReference<Survival
   final DropItemType dropType;
   final int value;
   final Equipment? equipment;
+  final VoidCallback? onCollectedCallback;
 
   static const double pickupRadius = 40.0;
   static const double collectDistance = 12.0;
@@ -32,6 +33,7 @@ class DropItemComponent extends PositionComponent with HasGameReference<Survival
   DropItemComponent.gold({
     required Vector2 position,
     required this.value,
+    this.onCollectedCallback,
   })  : dropType = DropItemType.gold,
         equipment = null,
         _baseY = position.y,
@@ -45,6 +47,7 @@ class DropItemComponent extends PositionComponent with HasGameReference<Survival
   DropItemComponent.exp({
     required Vector2 position,
     required this.value,
+    this.onCollectedCallback,
   })  : dropType = DropItemType.exp,
         equipment = null,
         _baseY = position.y,
@@ -58,6 +61,7 @@ class DropItemComponent extends PositionComponent with HasGameReference<Survival
   DropItemComponent.equipment({
     required Vector2 position,
     required Equipment this.equipment,
+    this.onCollectedCallback,
   })  : dropType = DropItemType.equipment,
         value = 0,
         _baseY = position.y,
@@ -192,6 +196,7 @@ class DropItemComponent extends PositionComponent with HasGameReference<Survival
           }
         }
     }
+    onCollectedCallback?.call();
     removeFromParent();
   }
 }

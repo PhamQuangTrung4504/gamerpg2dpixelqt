@@ -81,4 +81,8 @@ class AssetPaths {
   static const String fxSkill2SwordArray = 'assets/ki_nang/thi_trien_ki_nang_2_van_kiem_quy_tong_192x32.png';
   static const String fxSkill3FlyingSword = 'assets/ki_nang/thi_trien_ki_nang_3_ho_kiem_phi_kiem_24x24.png';
   static const String fxShield = 'assets/ki_nang/hieu_ung_khien_64x32.png';
+
+  // --- NPC ---
+  static const String npcElder = 'assets/npc/truong_lang_dung_im_noi_chuyen.png';
+  static const String npcElderFlame = 'npc/truong_lang_dung_im_noi_chuyen.png';
 }

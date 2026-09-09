@@ -66,6 +66,7 @@ flutter:
     - assets/hud/
     - assets/icons/
     - assets/ki_nang/
+    - assets/npc/
     - assets/nhan_vat_chinh/di_chuyen/
     - assets/nhan_vat_chinh/dung_im/
     - assets/nhan_vat_chinh/tan_cong/

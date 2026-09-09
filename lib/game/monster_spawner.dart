@@ -14,10 +14,12 @@ class MonsterSpawnerComponent extends Component with HasGameReference<SurvivalGa
 
   double _timer = 0.0;
   final Random _rng = Random();
+  bool isEnabled = true;
 
   @override
   void update(double dt) {
     super.update(dt);
+    if (!isEnabled) return;
     _timer += dt;
 
     if (_timer >= spawnInterval) {

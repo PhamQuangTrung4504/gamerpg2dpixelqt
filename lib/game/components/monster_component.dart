@@ -100,6 +100,16 @@ class MonsterComponent extends SpriteAnimationGroupComponent<CharacterState>
     super.update(dt);
     if (_isDead) return;
 
+    // Trong lúc Camera đang lia giới thiệu quái trong kịch bản mở đầu, giữ quái ở trạng thái đứng yên
+    if (game.tutorialManager.isPanning) {
+      if (animations != null) {
+        current = CharacterState.idle;
+      }
+      return;
+    }
+
+    if (animations == null) return;
+
     // Cập nhật trạng thái hiệu ứng khống chế (Slow & Stun)
     if (_stunTimer > 0) {
       _stunTimer -= dt;
@@ -302,14 +312,14 @@ class MonsterComponent extends SpriteAnimationGroupComponent<CharacterState>
   void render(Canvas canvas) {
     super.render(canvas);
 
-    // Vẽ thanh máu mini phía trên đầu quái (Mini HP Bar)
+    // Vẽ thanh máu mini căn giữa phía trên đầu quái (Mini HP Bar)
     final maxHp = monsterData.stats.maxHp;
     if (maxHp <= 0 || _isDead) return;
 
-    final barWidth = size.x;
-    const barHeight = 3.0;
-    final barX = -barWidth / 2;
-    final barY = -size.y / 2 - 6.0;
+    final barWidth = size.x * 0.85;
+    const barHeight = 3.5;
+    final barX = (size.x - barWidth) / 2;
+    final barY = -6.0;
 
     final hpRatio = (currentHp / maxHp).clamp(0.0, 1.0);
 
@@ -323,7 +333,7 @@ class MonsterComponent extends SpriteAnimationGroupComponent<CharacterState>
       canvas.drawRect(fillRect, _hpFillPaint);
     }
 
-    // Viền đen mảnh
+    // Viền đen mảnh phong cách pixel
     canvas.drawRect(bgRect, _hpBorderPaint);
   }
 }

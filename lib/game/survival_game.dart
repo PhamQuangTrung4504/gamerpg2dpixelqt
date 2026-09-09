@@ -10,12 +10,15 @@ import 'components/game_map.dart';
 import 'components/joystick.dart';
 import 'components/player_component.dart';
 import 'monster_spawner.dart';
+import 'tutorial/tutorial_manager.dart';
 
 /// Lớp điều khiển chính của trò chơi (FlameGame)
 class SurvivalGame extends FlameGame with HasCollisionDetection, KeyboardEvents {
   late final PlayerComponent player;
   late final JoystickComponent joystick;
   late final GameHud hud;
+  late final MonsterSpawnerComponent spawner;
+  late final TutorialManager tutorialManager;
 
   final Set<LogicalKeyboardKey> _keysPressed = {};
 
@@ -38,9 +41,10 @@ class SurvivalGame extends FlameGame with HasCollisionDetection, KeyboardEvents 
     final map = GameMapComponent();
     await world.add(map);
 
-    // 2. Thêm nhân vật chính (Player) ở trung tâm bản đồ
+    // 2. Thêm nhân vật chính (Player) ở trung tâm bản đồ, bắt đầu sơ khởi (chưa trang bị kiếm)
     player = PlayerComponent(
       initialPosition: Vector2(GameConstants.mapWidth / 2, GameConstants.mapHeight / 2),
+      startWithSword: false,
     );
     await world.add(player);
 
@@ -60,10 +64,14 @@ class SurvivalGame extends FlameGame with HasCollisionDetection, KeyboardEvents 
     hud = GameHud();
     camera.viewport.add(hud);
 
-    // 6. Thêm Bộ sinh quái tự động vào World
-    final spawner = MonsterSpawnerComponent();
+    // 6. Thêm Bộ sinh quái tự động vào World (tạm tắt trong giai đoạn tân thủ)
+    spawner = MonsterSpawnerComponent()..isEnabled = false;
     await world.add(spawner);
-    spawner.spawnInitialWave(3);
+
+    // 7. Khởi chạy kịch bản Mở đầu / Hướng dẫn Tân thủ
+    tutorialManager = TutorialManager();
+    await add(tutorialManager);
+    tutorialManager.start();
   }
 
   @override
