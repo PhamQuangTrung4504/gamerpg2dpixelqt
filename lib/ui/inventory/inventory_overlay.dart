@@ -141,21 +141,15 @@ class _InventoryOverlayState extends State<InventoryOverlay> {
                               ),
                               const SizedBox(height: 4),
 
-                              // Nửa trên: Mô hình nhân vật và 10 ô trang bị bao quanh (Kích thước gọn 28px)
+                              // Nửa trên: Bố trí 10 ô trang bị bao quanh nhân vật theo cấu tạo RPG
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  // Cột 5 ô bên trái: Mũ, Kính, Giáp, Quần, Giày
+                                  // Cột bên trái (4 ô): Kính, Dây chuyền, Quần, Giày
                                   Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      EquipmentSlotWidget(
-                                        size: 28,
-                                        item: equipped[EquipmentType.helmet],
-                                        slotType: EquipmentType.helmet,
-                                        onTap: () => _inspectEquippedItem(EquipmentType.helmet),
-                                      ),
-                                      const SizedBox(height: 2),
                                       EquipmentSlotWidget(
                                         size: 28,
                                         item: equipped[EquipmentType.glasses],
@@ -165,9 +159,9 @@ class _InventoryOverlayState extends State<InventoryOverlay> {
                                       const SizedBox(height: 2),
                                       EquipmentSlotWidget(
                                         size: 28,
-                                        item: equipped[EquipmentType.armor],
-                                        slotType: EquipmentType.armor,
-                                        onTap: () => _inspectEquippedItem(EquipmentType.armor),
+                                        item: equipped[EquipmentType.necklace],
+                                        slotType: EquipmentType.necklace,
+                                        onTap: () => _inspectEquippedItem(EquipmentType.necklace),
                                       ),
                                       const SizedBox(height: 2),
                                       EquipmentSlotWidget(
@@ -186,13 +180,42 @@ class _InventoryOverlayState extends State<InventoryOverlay> {
                                     ],
                                   ),
 
-                                  // Chính giữa: Mô hình nhân vật idle (scale 1.8 gọn gàng)
-                                  CharacterPreviewWidget(
-                                    equippedItems: equipped,
-                                    scale: 1.8,
+                                  const SizedBox(width: 8),
+
+                                  // Cột chính giữa: Mũ (trên đầu), Nhân vật Preview, Áo giáp (dưới thân)
+                                  Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // Phía trên: Mũ nằm chính giữa bên trên đầu nhân vật
+                                      EquipmentSlotWidget(
+                                        size: 28,
+                                        item: equipped[EquipmentType.helmet],
+                                        slotType: EquipmentType.helmet,
+                                        onTap: () => _inspectEquippedItem(EquipmentType.helmet),
+                                      ),
+                                      const SizedBox(height: 3),
+
+                                      // Mô hình nhân vật preview (thu nhỏ 20%, scale 1.45, khung 56x56)
+                                      CharacterPreviewWidget(
+                                        equippedItems: equipped,
+                                        scale: 1.45,
+                                        containerSize: 56,
+                                      ),
+                                      const SizedBox(height: 3),
+
+                                      // Dưới thân: Áo giáp
+                                      EquipmentSlotWidget(
+                                        size: 28,
+                                        item: equipped[EquipmentType.armor],
+                                        slotType: EquipmentType.armor,
+                                        onTap: () => _inspectEquippedItem(EquipmentType.armor),
+                                      ),
+                                    ],
                                   ),
 
-                                  // Cột 5 ô bên phải: Kiếm, Cánh, Dây chuyền, Nhẫn, Bí kíp
+                                  const SizedBox(width: 8),
+
+                                  // Cột bên phải (4 ô): Kiếm (Vũ khí), Cánh, Nhẫn, Bí kíp
                                   Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -208,13 +231,6 @@ class _InventoryOverlayState extends State<InventoryOverlay> {
                                         item: equipped[EquipmentType.wings],
                                         slotType: EquipmentType.wings,
                                         onTap: () => _inspectEquippedItem(EquipmentType.wings),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      EquipmentSlotWidget(
-                                        size: 28,
-                                        item: equipped[EquipmentType.necklace],
-                                        slotType: EquipmentType.necklace,
-                                        onTap: () => _inspectEquippedItem(EquipmentType.necklace),
                                       ),
                                       const SizedBox(height: 2),
                                       EquipmentSlotWidget(
@@ -261,32 +277,53 @@ class _InventoryOverlayState extends State<InventoryOverlay> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              // Tiêu đề bảng phải kèm số lượng ô (Ví dụ: 5 / 100)
+                              // Tiêu đề bảng phải kèm số lượng ô và khoảng đệm an toàn tránh nút [X]
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    'KHO ĐỒ (HÀNH TRANG)',
-                                    style: GameTypography.pixel(
-                                      color: const Color(0xFFFFD54F),
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      shadows: const [
-                                        Shadow(blurRadius: 2, color: Colors.black, offset: Offset(1, 1)),
-                                      ],
+                                  Expanded(
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerLeft,
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            'KHO ĐỒ (HÀNH TRANG)',
+                                            style: GameTypography.pixel(
+                                              color: const Color(0xFFFFD54F),
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              shadows: const [
+                                                Shadow(blurRadius: 2, color: Colors.black, offset: Offset(1, 1)),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0x66000000),
+                                              borderRadius: BorderRadius.circular(4),
+                                              border: Border.all(color: const Color(0x55FFD54F), width: 1),
+                                            ),
+                                            child: Text(
+                                              '${inventory.length} / ${PlayerComponent.maxInventorySlots}',
+                                              style: GameTypography.pixel(
+                                                color: const Color(0xFFE0E0E0),
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.bold,
+                                                shadows: const [
+                                                  Shadow(blurRadius: 1, color: Colors.black, offset: Offset(1, 1)),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                  Text(
-                                    '${inventory.length} / ${PlayerComponent.maxInventorySlots}',
-                                    style: GameTypography.pixel(
-                                      color: const Color(0xFFE0E0E0),
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      shadows: const [
-                                        Shadow(blurRadius: 1, color: Colors.black, offset: Offset(1, 1)),
-                                      ],
-                                    ),
-                                  ),
+                                  // Khoảng đệm an toàn tuyệt đối không để nút Đóng [X] đè lên chữ
+                                  const SizedBox(width: 48),
                                 ],
                               ),
                               const SizedBox(height: 6),

@@ -5,6 +5,7 @@ import 'package:gamerpg2dpixelqt/constants/game_constants.dart';
 import 'package:gamerpg2dpixelqt/game/components/player_component.dart';
 import 'package:gamerpg2dpixelqt/models/character_stats.dart';
 import 'package:gamerpg2dpixelqt/models/equipment.dart';
+import 'package:gamerpg2dpixelqt/ui/inventory/character_preview_widget.dart';
 import 'package:gamerpg2dpixelqt/ui/inventory/equipment_slot_widget.dart';
 import 'package:gamerpg2dpixelqt/ui/inventory/item_detail_tooltip.dart';
 import 'package:gamerpg2dpixelqt/ui/inventory/nine_slice_box.dart';
@@ -254,6 +255,30 @@ void main() {
       await tester.tap(find.text('Bán'));
       await tester.pump();
       expect(sellPressed, isTrue);
+    });
+
+    testWidgets('CharacterPreviewWidget accepts scale and containerSize', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: CharacterPreviewWidget(
+                equippedItems: const {},
+                scale: 1.45,
+                containerSize: 56,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(CharacterPreviewWidget), findsOneWidget);
+      final container = tester.widget<Container>(find.descendant(
+        of: find.byType(CharacterPreviewWidget),
+        matching: find.byType(Container),
+      ));
+      expect(container.constraints?.minWidth, equals(56.0));
+      expect(container.constraints?.minHeight, equals(56.0));
     });
 
     test('Player base speed increased by 30% to 130.0 for kiting', () {

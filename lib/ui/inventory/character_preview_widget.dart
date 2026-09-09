@@ -7,11 +7,13 @@ import '../../models/equipment.dart';
 class CharacterPreviewWidget extends StatefulWidget {
   final Map<EquipmentType, Equipment> equippedItems;
   final double scale;
+  final double? containerSize;
 
   const CharacterPreviewWidget({
     super.key,
     required this.equippedItems,
-    this.scale = 1.8,
+    this.scale = 1.45,
+    this.containerSize,
   });
 
   @override
@@ -78,6 +80,7 @@ class _CharacterPreviewWidgetState extends State<CharacterPreviewWidget> {
   @override
   Widget build(BuildContext context) {
     final size = 32.0 * widget.scale;
+    final boxSize = widget.containerSize ?? (size + 8);
 
     final wings = widget.equippedItems[EquipmentType.wings];
     final sword = widget.equippedItems[EquipmentType.sword];
@@ -89,8 +92,8 @@ class _CharacterPreviewWidgetState extends State<CharacterPreviewWidget> {
     final glasses = widget.equippedItems[EquipmentType.glasses];
 
     return Container(
-      width: size + 16,
-      height: size + 16,
+      width: boxSize,
+      height: boxSize,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: const Color(0x33000000),
