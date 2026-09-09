@@ -11,7 +11,7 @@ class CharacterPreviewWidget extends StatefulWidget {
   const CharacterPreviewWidget({
     super.key,
     required this.equippedItems,
-    this.scale = 2.2,
+    this.scale = 1.8,
   });
 
   @override

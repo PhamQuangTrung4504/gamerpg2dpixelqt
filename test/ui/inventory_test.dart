@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gamerpg2dpixelqt/constants/equipment_types.dart';
+import 'package:gamerpg2dpixelqt/constants/game_constants.dart';
 import 'package:gamerpg2dpixelqt/game/components/player_component.dart';
 import 'package:gamerpg2dpixelqt/models/character_stats.dart';
 import 'package:gamerpg2dpixelqt/models/equipment.dart';
@@ -20,8 +21,8 @@ void main() {
       expect(player.equippedItems.containsKey(EquipmentType.sword), isTrue);
       expect(player.equippedItems[EquipmentType.sword]?.id, equals('kiem_go'));
 
-      // Kiểm tra túi đồ có sức chứa tối đa 20 ô
-      expect(PlayerComponent.maxInventorySlots, equals(20));
+      // Kiểm tra túi đồ có sức chứa tối đa 100 ô
+      expect(PlayerComponent.maxInventorySlots, equals(100));
 
       // Kiểm tra túi đồ ban đầu rỗng và vàng là 0
       expect(player.inventory.isEmpty, isTrue);
@@ -45,15 +46,15 @@ void main() {
       expect(player.inventory.contains(EquipmentCatalog.kiemBac), isFalse);
     });
 
-    test('Inventory capacity limit (max 20 slots)', () {
+    test('Inventory capacity limit (max 100 slots)', () {
       final player = PlayerComponent();
-      // Làm đầy túi đồ tới 20 món
+      // Làm đầy túi đồ tới 100 món
       while (player.inventory.length < PlayerComponent.maxInventorySlots) {
         player.addToInventory(EquipmentCatalog.nhanSat);
       }
       expect(player.inventory.length, equals(PlayerComponent.maxInventorySlots));
 
-      // Thêm món thứ 21 -> thất bại
+      // Thêm món thứ 101 -> thất bại
       final overflow = player.addToInventory(EquipmentCatalog.kiemKimCuong);
       expect(overflow, isFalse);
       expect(player.inventory.length, equals(PlayerComponent.maxInventorySlots));
@@ -253,6 +254,26 @@ void main() {
       await tester.tap(find.text('Bán'));
       await tester.pump();
       expect(sellPressed, isTrue);
+    });
+
+    test('Player base speed increased by 30% to 130.0 for kiting', () {
+      expect(GameConstants.playerBaseSpeed, equals(130.0));
+    });
+
+    test('Equipment drop component adds item to player inventory upon pickup', () {
+      final player = PlayerComponent();
+      expect(player.inventory.length, equals(0));
+
+      // Nhặt trang bị rơi
+      player.addToInventory(EquipmentCatalog.giapSat);
+      expect(player.inventory.length, equals(1));
+      expect(player.inventory.first.id, equals('giap_sat'));
+
+      // Kiểm tra đường dẫn tài nguyên rơi chuẩn xác
+      expect(
+        EquipmentCatalog.giapSat.dropAssetPath,
+        equals('assets/trang_bi_roi/vat_pham_giap_sat_roi_16x16.png'),
+      );
     });
   });
 }

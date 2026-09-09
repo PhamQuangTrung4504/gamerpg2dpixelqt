@@ -20,8 +20,8 @@ class GameConstants {
   static const double attackStepTime = 0.15;
   static const int characterFrameCount = 2;
 
-  // --- Tốc độ di chuyển cơ bản ---
-  static const double playerBaseSpeed = 80.0;
+  // --- Tốc độ di chuyển cơ bản (tăng lên 130.0 để kiting linh hoạt trước Dơi 85 và Sói 70) ---
+  static const double playerBaseSpeed = 130.0;
 
   // --- Cấp độ nhân vật ---
   static const int minLevel = 1;

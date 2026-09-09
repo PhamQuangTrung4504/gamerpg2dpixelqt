@@ -264,18 +264,31 @@ class MonsterComponent extends SpriteAnimationGroupComponent<CharacterState>
   /// Kiểm tra tỉ lệ rơi trang bị chuẩn xác theo tài liệu
   void _checkEquipmentDrop(Vector2 dropPos, Random rng) {
     if (!isMounted) return;
-    // Lọc trang bị có cấp độ yêu cầu phù hợp với cấp của quái vật (trong khoảng cấp -3 đến +2)
+
+    final playerLevel = game.player.expManager.currentLevel;
+    final effectiveLevel = max(monsterData.level, playerLevel);
+
+    // Lọc trang bị có cấp độ yêu cầu phù hợp với cấp của quái vật hoặc người chơi (trong khoảng +-5 cấp)
     final eligibleItems = EquipmentCatalog.all.where((e) {
-      final levelDiff = (e.requiredLevel - monsterData.level).abs();
-      return levelDiff <= 4;
+      final levelDiff = (e.requiredLevel - effectiveLevel).abs();
+      return levelDiff <= 5;
     }).toList();
+
+    if (eligibleItems.isEmpty) return;
+
+    // Trộn ngẫu nhiên để không bị cố định rơi một món lặp lại
+    eligibleItems.shuffle(rng);
+
+    // Tỉ lệ tổng thể rơi trang bị khi tiêu diệt quái: ~40%
+    if (rng.nextDouble() > 0.40) return;
 
     for (final item in eligibleItems) {
       final roll = rng.nextDouble() * 100.0;
-      if (roll < item.dropRatePercent) {
+      final rate = max(20.0, item.dropRatePercent);
+      if (roll <= rate) {
         game.world.add(
           DropItemComponent.equipment(
-            position: dropPos + Vector2(rng.nextDouble() * 16 - 8, rng.nextDouble() * 16 - 8),
+            position: dropPos + Vector2(rng.nextDouble() * 20 - 10, rng.nextDouble() * 20 - 10),
             equipment: item,
           ),
         );

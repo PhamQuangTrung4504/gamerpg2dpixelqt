@@ -29,7 +29,7 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
   final Map<EquipmentType, Equipment> _equippedItems = {};
 
   // Hệ thống túi đồ (Inventory)
-  static const int maxInventorySlots = 20;
+  static const int maxInventorySlots = 100;
   final List<Equipment> _inventory = [];
   final InventoryNotifier inventoryNotifier = InventoryNotifier();
 

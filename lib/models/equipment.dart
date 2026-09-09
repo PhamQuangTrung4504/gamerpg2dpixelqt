@@ -37,7 +37,7 @@ class Equipment {
   String get iconAssetPath => 'assets/o_trang_bi/o_trang_bi_$itemIdentifier.png';
 
   /// Đường dẫn vật phẩm rơi trên mặt đất
-  String get dropAssetPath => 'assets/trang_bi_roi/vat_pham_${itemIdentifier}_roi_16x16.png';
+  String get dropAssetPath => 'assets/trang_bi_roi/vat_pham_${id}_roi_16x16.png';
 }
 
 /// Danh mục toàn bộ 38 trang bị chuẩn xác theo tài liệu thiết kế

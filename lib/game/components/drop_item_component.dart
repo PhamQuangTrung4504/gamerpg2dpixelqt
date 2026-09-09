@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flame/components.dart';
+import 'package:flutter/material.dart';
 import '../../core/asset_paths.dart';
 import '../../models/equipment.dart';
 import '../survival_game.dart';
@@ -100,14 +101,14 @@ class DropItemComponent extends PositionComponent with HasGameReference<Survival
       case DropItemType.exp:
         assetPath = AssetPaths.itemExp;
       case DropItemType.equipment:
-        assetPath = equipment!.dropAssetPath;
+        assetPath = 'assets/trang_bi_roi/vat_pham_${equipment!.id}_roi_16x16.png';
     }
 
     try {
       final sprite = await game.loadSprite(assetPath);
       _spriteComp = SpriteComponent(
         sprite: sprite,
-        size: size,
+        size: Vector2.all(18.0),
         anchor: Anchor.center,
         position: size / 2,
         priority: 6,
@@ -177,6 +178,7 @@ class DropItemComponent extends PositionComponent with HasGameReference<Survival
               FloatingTextComponent.info(
                 position: position.clone(),
                 text: '+${equipment!.name}',
+                color: const Color(0xFFFFB300),
               ),
             );
           } else {
@@ -184,6 +186,7 @@ class DropItemComponent extends PositionComponent with HasGameReference<Survival
               FloatingTextComponent.info(
                 position: position.clone(),
                 text: 'Túi đồ đầy!',
+                color: const Color(0xFFEF5350),
               ),
             );
           }
