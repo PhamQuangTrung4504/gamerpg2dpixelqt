@@ -9,6 +9,7 @@ import 'components/game_hud.dart';
 import 'components/game_map.dart';
 import 'components/joystick.dart';
 import 'components/player_component.dart';
+import 'monster_spawner.dart';
 
 /// Lớp điều khiển chính của trò chơi (FlameGame)
 class SurvivalGame extends FlameGame with HasCollisionDetection, KeyboardEvents {
@@ -58,6 +59,11 @@ class SurvivalGame extends FlameGame with HasCollisionDetection, KeyboardEvents 
     // 5. Thêm HUD hiển thị HP/MP/EXP và các nút kỹ năng lên Viewport
     hud = GameHud();
     camera.viewport.add(hud);
+
+    // 6. Thêm Bộ sinh quái tự động vào World
+    final spawner = MonsterSpawnerComponent();
+    await world.add(spawner);
+    spawner.spawnInitialWave(3);
   }
 
   @override
@@ -75,10 +81,29 @@ class SurvivalGame extends FlameGame with HasCollisionDetection, KeyboardEvents 
     _keysPressed.clear();
     _keysPressed.addAll(keysPressed);
 
-    // Nhấn Space để tấn công
-    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.space) {
-      player.performAttack();
-      return KeyEventResult.handled;
+    if (event is KeyDownEvent) {
+      // Đòn đánh thường: Phím Space hoặc J
+      if (event.logicalKey == LogicalKeyboardKey.space || event.logicalKey == LogicalKeyboardKey.keyJ) {
+        player.performAttack();
+        return KeyEventResult.handled;
+      }
+      // Kỹ năng 1 - Liệt Hỏa Đoạt Mệnh: Phím 1 hoặc K
+      if (event.logicalKey == LogicalKeyboardKey.digit1 || event.logicalKey == LogicalKeyboardKey.keyK) {
+        player.useSkill1();
+        return KeyEventResult.handled;
+      }
+      // Kỹ năng 2 - Vạn Kiếm Quy Tông: Phím 2 hoặc L
+      if (event.logicalKey == LogicalKeyboardKey.digit2 || event.logicalKey == LogicalKeyboardKey.keyL) {
+        player.useSkill2();
+        return KeyEventResult.handled;
+      }
+      // Kỹ năng 3 - Ngự Kiếm Hộ Thể: Phím 3 hoặc Semicolon / O
+      if (event.logicalKey == LogicalKeyboardKey.digit3 ||
+          event.logicalKey == LogicalKeyboardKey.semicolon ||
+          event.logicalKey == LogicalKeyboardKey.keyO) {
+        player.useSkill3();
+        return KeyEventResult.handled;
+      }
     }
 
     return KeyEventResult.ignored;

@@ -18,7 +18,7 @@ class BodyComponent extends SpriteAnimationComponent with HasGameReference<Survi
           position: GameConstants.characterSize / 2,
           size: GameConstants.characterSize,
           anchor: Anchor.center,
-          priority: 10,
+          priority: 20,
         );
 
   CharacterState get state => _state;

@@ -1,6 +1,7 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'game/survival_game.dart';
 
 void main() async {
@@ -27,6 +28,7 @@ class GameApp extends StatelessWidget {
       theme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: Colors.black,
+        textTheme: GoogleFonts.vt323TextTheme(ThemeData.dark().textTheme),
       ),
       home: Scaffold(
         body: GameWidget<SurvivalGame>.controlled(

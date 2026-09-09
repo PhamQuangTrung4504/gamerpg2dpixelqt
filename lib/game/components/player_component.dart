@@ -7,9 +7,15 @@ import '../../constants/player_state.dart';
 import '../../core/exp_manager.dart';
 import '../../models/character_stats.dart';
 import '../../models/equipment.dart';
+import '../../models/skill.dart';
 import '../survival_game.dart';
 import 'body_component.dart';
 import 'equipment_layer_component.dart';
+import 'monster_component.dart';
+import 'skills/basic_slash_effect.dart';
+import 'skills/flame_slash_projectile.dart';
+import 'skills/shield_effect.dart';
+import 'skills/sword_storm_area.dart';
 
 /// Component người chơi chính kết hợp Thân và Đa lớp trang bị (Multi-layer Equipment)
 class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGame> {
@@ -23,6 +29,7 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
   late CharacterStats _totalStats;
   double _currentHp = 100;
   double _currentMp = 100;
+  int _gold = 0;
 
   late final ExpManager _expManager;
 
@@ -34,7 +41,18 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
 
   // Thời gian duy trì đòn tấn công
   double _attackTimer = 0.0;
-  static const double _attackDuration = 0.30;
+  static const double _attackDuration = 0.25;
+
+  // Bộ đếm hồi chiêu (Cooldown) cho Đòn đánh thường và 3 Kỹ năng
+  double attackCooldownRemaining = 0.0;
+  double skill1CooldownRemaining = 0.0;
+  double skill2CooldownRemaining = 0.0;
+  double skill3CooldownRemaining = 0.0;
+
+  // Hiệu ứng Buff tạm thời (từ Kỹ năng 3)
+  double _buffArmor = 0.0;
+  double _buffCritResistance = 0.0;
+  double _buffDuration = 0.0;
 
   PlayerComponent({Vector2? initialPosition})
       : super(
@@ -60,8 +78,25 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
   CharacterStats get stats => _totalStats;
   double get currentHp => _currentHp;
   double get currentMp => _currentMp;
+  int get gold => _gold;
   ExpManager get expManager => _expManager;
   Map<EquipmentType, Equipment> get equippedItems => Map.unmodifiable(_equippedItems);
+
+  void addGold(int amount) {
+    _gold += amount;
+  }
+
+  /// Áp dụng hiệu ứng buff phòng thủ tạm thời (từ Kỹ năng 3)
+  void applyTemporaryBuff({
+    required double extraArmor,
+    required double extraCritResistance,
+    required double duration,
+  }) {
+    _buffArmor = extraArmor;
+    _buffCritResistance = extraCritResistance;
+    _buffDuration = duration;
+    _recalculateStats();
+  }
 
   @override
   Future<void> onLoad() async {
@@ -110,25 +145,129 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
     }
   }
 
-  /// Tính toán lại toàn bộ chỉ số khi thay đổi trang bị
+  /// Tính toán lại toàn bộ chỉ số khi thay đổi trang bị hoặc kích hoạt buff
   void _recalculateStats() {
     var combined = CharacterStats.initialBase;
     for (final item in _equippedItems.values) {
       combined = combined + item.stats;
     }
-    _totalStats = combined.applyCoolnessMultiplier();
+    var total = combined.applyCoolnessMultiplier();
+
+    // Áp dụng thêm chỉ số Buff tạm thời
+    if (_buffArmor > 0 || _buffCritResistance > 0) {
+      total = total.copyWith(
+        defense: total.defense + _buffArmor,
+        critResistance: total.critResistance + _buffCritResistance,
+      );
+    }
+    _totalStats = total;
 
     // Đảm bảo HP và MP không vượt quá Max HP/MP mới
     _currentHp = _currentHp.clamp(0, _totalStats.maxHp);
     _currentMp = _currentMp.clamp(0, _totalStats.maxMp);
   }
 
-  /// Kích hoạt đòn tấn công
-  void performAttack() {
-    if (_state == CharacterState.attack) return;
+  /// Kích hoạt Đòn đánh thường (Cận chiến hình bán nguyệt)
+  bool performAttack() {
+    if (attackCooldownRemaining > 0) return false;
+
+    final skillData = SkillCatalog.danhThuong.getDataForLevel(1);
+    attackCooldownRemaining = skillData.cooldown;
+
     _state = CharacterState.attack;
     _attackTimer = _attackDuration;
     _syncLayers();
+
+    // Sinh hiệu ứng chém bán nguyệt trước mặt nhân vật
+    if (isMounted) {
+      game.world.add(
+        BasicSlashEffectComponent(
+          playerPosition: position,
+          direction: _direction,
+        ),
+      );
+    }
+    return true;
+  }
+
+  /// Kỹ năng 1: Liệt Hỏa Đoạt Mệnh (Kiếm khí lửa xuyên thấu bay thẳng 250px)
+  bool useSkill1() {
+    if (skill1CooldownRemaining > 0) return false;
+    final skillData = SkillCatalog.lietHoaDoatMenh.getDataForLevel(1);
+
+    if (!consumeMp(skillData.manaCost)) return false;
+
+    skill1CooldownRemaining = skillData.cooldown;
+    _state = CharacterState.attack;
+    _attackTimer = _attackDuration;
+    _syncLayers();
+
+    if (isMounted) {
+      game.world.add(
+        FlameSlashProjectileComponent(
+          startPosition: position,
+          flightDirection: _direction.toVector2(),
+        ),
+      );
+    }
+    return true;
+  }
+
+  /// Kỹ năng 2: Vạn Kiếm Quy Tông (Kiếm trận bán kính 90px, 3 đợt cự kiếm + làm chậm)
+  bool useSkill2() {
+    if (skill2CooldownRemaining > 0) return false;
+    final skillData = SkillCatalog.vanKiemQuyTong.getDataForLevel(1);
+
+    if (!consumeMp(skillData.manaCost)) return false;
+
+    skill2CooldownRemaining = skillData.cooldown;
+    _state = CharacterState.attack;
+    _attackTimer = _attackDuration;
+    _syncLayers();
+
+    if (isMounted) {
+      // Tìm vị trí quái gần nhất trong vòng 200px hoặc cách trước mặt 80px
+      final targetPos = _findNearestMonsterTarget() ?? (position + _direction.toVector2() * 80.0);
+      game.world.add(
+        SwordStormAreaComponent(centerPosition: targetPos),
+      );
+    }
+    return true;
+  }
+
+  /// Kỹ năng 3: Ngự Kiếm Hộ Thể / Phi Kiếm (Khiên xoay buff thủ 3s sau đó phóng 6 phi kiếm)
+  bool useSkill3() {
+    if (skill3CooldownRemaining > 0) return false;
+    final skillData = SkillCatalog.nguKiemPhiKiem.getDataForLevel(1);
+
+    if (!consumeMp(skillData.manaCost)) return false;
+
+    skill3CooldownRemaining = skillData.cooldown;
+    _state = CharacterState.attack;
+    _attackTimer = _attackDuration;
+    _syncLayers();
+
+    if (isMounted) {
+      game.world.add(ShieldBuffEffectComponent());
+    }
+    return true;
+  }
+
+  Vector2? _findNearestMonsterTarget() {
+    if (!isMounted) return null;
+    final monsters = game.world.children.whereType<MonsterComponent>().toList();
+    double minDistance = 220.0;
+    Vector2? closest;
+
+    for (final monster in monsters) {
+      if (monster.isDead) continue;
+      final dist = (monster.position - position).length;
+      if (dist < minDistance) {
+        minDistance = dist;
+        closest = monster.position.clone();
+      }
+    }
+    return closest;
   }
 
   /// Trừ máu khi nhận sát thương
@@ -158,6 +297,30 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
   @override
   void update(double dt) {
     super.update(dt);
+
+    // Cập nhật bộ đếm hồi chiêu
+    if (attackCooldownRemaining > 0) {
+      attackCooldownRemaining = max(0, attackCooldownRemaining - dt);
+    }
+    if (skill1CooldownRemaining > 0) {
+      skill1CooldownRemaining = max(0, skill1CooldownRemaining - dt);
+    }
+    if (skill2CooldownRemaining > 0) {
+      skill2CooldownRemaining = max(0, skill2CooldownRemaining - dt);
+    }
+    if (skill3CooldownRemaining > 0) {
+      skill3CooldownRemaining = max(0, skill3CooldownRemaining - dt);
+    }
+
+    // Cập nhật thời gian hiệu lực Buff tạm thời
+    if (_buffDuration > 0) {
+      _buffDuration -= dt;
+      if (_buffDuration <= 0) {
+        _buffArmor = 0;
+        _buffCritResistance = 0;
+        _recalculateStats();
+      }
+    }
 
     // 1. Cập nhật chu kỳ hồi máu / hồi năng lượng mỗi giây
     _regenTimer += dt;

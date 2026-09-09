@@ -2,6 +2,7 @@ import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
 import '../../core/asset_paths.dart';
+import '../../core/game_typography.dart';
 import '../survival_game.dart';
 
 /// HUD hiển thị thanh máu (HP), năng lượng (MP), kinh nghiệm (EXP) và các nút kỹ năng
@@ -27,27 +28,30 @@ class GameHud extends PositionComponent with HasGameReference<SurvivalGame> {
   final Paint _expFillPaint = Paint()..color = const Color(0xFF43A047);
   final Paint _barBgPaint = Paint()..color = const Color(0xFF212121);
 
+  // Tọa độ lề trên trái của cụm HUD (dời sang phải thêm 5px: từ x:16 -> x:21)
+  static const double hudOriginX = 21.0;
+  static const double hudOriginY = 16.0;
+  static const double expOriginX = 21.0;
+  static const double expOriginY = 69.0;
+
   // Kích thước chuẩn tỉ lệ 2.2x cho HUD và 2.6x cho EXP (rộng 120-130px)
   static const double hudWidth = 128.0;
   static const double hudHeight = 48.0;
   static const double expWidth = 120.0;
   static const double expHeight = 23.0;
 
-  // Tọa độ các khe cắm thanh máu/mana/exp (tương đối theo lề 16px)
-  // HP slot: x: 49..130 (width: 81), y: 25..34 (height: 9)
-  // MP slot: x: 49..130 (width: 81), y: 45..54 (height: 9)
-  // EXP slot: x: 60..120 (width: 60), y: 77..85 (height: 8)
-  static const double hpSlotX = 49.0;
+  // Tọa độ các khe cắm thanh máu/mana/exp (tương đối theo lề mới 21px)
+  static const double hpSlotX = 54.0;
   static const double hpSlotY = 25.0;
   static const double hpSlotW = 81.0;
   static const double hpSlotH = 9.0;
 
-  static const double mpSlotX = 49.0;
+  static const double mpSlotX = 54.0;
   static const double mpSlotY = 45.0;
   static const double mpSlotW = 81.0;
   static const double mpSlotH = 9.0;
 
-  static const double expSlotX = 60.0;
+  static const double expSlotX = 65.0;
   static const double expSlotY = 77.0;
   static const double expSlotW = 60.0;
   static const double expSlotH = 8.0;
@@ -58,82 +62,87 @@ class GameHud extends PositionComponent with HasGameReference<SurvivalGame> {
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // 1. Khung HUD chính (58x22 px -> scale 2.2x = 128x48 px, góc trên trái lề 16px)
+    // 1. Khung HUD chính (58x22 px -> scale 2.2x = 128x48 px, lề mới x: 21, y: 16)
     final hudSprite = await game.loadSprite(AssetPaths.hudBar);
     _hudBarBg = SpriteComponent(
       sprite: hudSprite,
-      position: Vector2(16, 16),
+      position: Vector2(hudOriginX, hudOriginY),
       size: Vector2(hudWidth, hudHeight),
     );
     add(_hudBarBg!);
 
-    // 2. Khung EXP (46x9 px -> scale 2.6x = 120x23 px, ngay dưới HUD chính)
+    // 2. Khung EXP (46x9 px -> scale 2.6x = 120x23 px, ngay dưới HUD chính x: 21, y: 69)
     final expSprite = await game.loadSprite(AssetPaths.expBar);
     _expBarBg = SpriteComponent(
       sprite: expSprite,
-      position: Vector2(16, 69),
+      position: Vector2(expOriginX, expOriginY),
       size: Vector2(expWidth, expHeight),
     );
     add(_expBarBg!);
 
-    // 3. Text Level
+    // 3. Text Level - Căn chính giữa tâm icon huy hiệu góc trái khung HUD
+    // Huy hiệu có tâm tại x: 16.5, y: 24 tính từ gốc HUD
     _levelText = TextComponent(
       text: 'Lv. 1',
-      position: Vector2(21, 21),
+      position: Vector2(hudOriginX + 16.5, hudOriginY + hudHeight / 2),
+      anchor: Anchor.center,
       textRenderer: TextPaint(
-        style: const TextStyle(
-          color: Colors.amber,
-          fontSize: 10,
+        style: GameTypography.pixel(
+          color: const Color(0xFFFFD54F),
+          fontSize: 14,
           fontWeight: FontWeight.bold,
-          shadows: [Shadow(blurRadius: 2, color: Colors.black)],
+          shadows: const [
+            Shadow(blurRadius: 2, color: Colors.black, offset: Offset(1, 1)),
+            Shadow(blurRadius: 2, color: Colors.black, offset: Offset(-1, -1)),
+          ],
         ),
       ),
     );
     add(_levelText!);
 
-    // 4. Text HP (nằm lọt vào lõi thanh máu, fontSize: 10)
+    // 4. Text HP (nằm lọt vào lõi thanh máu)
     _hpText = TextComponent(
       text: '100 / 100',
       position: Vector2(hpSlotX + hpSlotW / 2, hpSlotY + hpSlotH / 2),
       anchor: Anchor.center,
       textRenderer: TextPaint(
-        style: const TextStyle(
+        style: GameTypography.pixel(
           color: Colors.white,
-          fontSize: 10,
+          fontSize: 13,
           fontWeight: FontWeight.bold,
-          shadows: [Shadow(blurRadius: 2, color: Colors.black)],
+          shadows: const [Shadow(blurRadius: 2, color: Colors.black)],
         ),
       ),
     );
     add(_hpText!);
 
-    // 5. Text MP (nằm lọt vào lõi thanh năng lượng, fontSize: 10)
+    // 5. Text MP (nằm lọt vào lõi thanh năng lượng)
     _mpText = TextComponent(
       text: '100 / 100',
       position: Vector2(mpSlotX + mpSlotW / 2, mpSlotY + mpSlotH / 2),
       anchor: Anchor.center,
       textRenderer: TextPaint(
-        style: const TextStyle(
+        style: GameTypography.pixel(
           color: Colors.white,
-          fontSize: 10,
+          fontSize: 13,
           fontWeight: FontWeight.bold,
-          shadows: [Shadow(blurRadius: 2, color: Colors.black)],
+          shadows: const [Shadow(blurRadius: 2, color: Colors.black)],
         ),
       ),
     );
     add(_mpText!);
 
-    // 6. Text EXP (nằm lọt vào lõi thanh exp, fontSize: 9)
+    // 6. Text EXP (nằm lọt vào lõi thanh exp)
     _expText = TextComponent(
       text: '0 / 20',
       position: Vector2(expSlotX + expSlotW / 2, expSlotY + expSlotH / 2),
       anchor: Anchor.center,
       textRenderer: TextPaint(
-        style: const TextStyle(
+        style: GameTypography.pixel(
           color: Colors.white,
-          fontSize: 9,
+          fontSize: 12,
           fontWeight: FontWeight.bold,
-          shadows: [Shadow(blurRadius: 2, color: Colors.black)],
+          shadows: const [Shadow(blurRadius: 2, color: Colors.black)],
         ),
       ),
     );
@@ -148,37 +157,33 @@ class GameHud extends PositionComponent with HasGameReference<SurvivalGame> {
     _attackBtn = HudActionButton(
       sprite: attackSprite,
       size: Vector2(56, 56),
+      cooldownRemaining: () => game.player.attackCooldownRemaining,
+      totalCooldown: 0.40,
       onPressed: () => game.player.performAttack(),
     );
 
     _skill1Btn = HudActionButton(
       sprite: s1Sprite,
       size: Vector2(40, 40),
-      onPressed: () {
-        if (game.player.consumeMp(12)) {
-          game.player.performAttack();
-        }
-      },
+      cooldownRemaining: () => game.player.skill1CooldownRemaining,
+      totalCooldown: 3.5,
+      onPressed: () => game.player.useSkill1(),
     );
 
     _skill2Btn = HudActionButton(
       sprite: s2Sprite,
       size: Vector2(40, 40),
-      onPressed: () {
-        if (game.player.consumeMp(30)) {
-          game.player.performAttack();
-        }
-      },
+      cooldownRemaining: () => game.player.skill2CooldownRemaining,
+      totalCooldown: 7.0,
+      onPressed: () => game.player.useSkill2(),
     );
 
     _skill3Btn = HudActionButton(
       sprite: s3Sprite,
       size: Vector2(40, 40),
-      onPressed: () {
-        if (game.player.consumeMp(60)) {
-          game.player.performAttack();
-        }
-      },
+      cooldownRemaining: () => game.player.skill3CooldownRemaining,
+      totalCooldown: 12.0,
+      onPressed: () => game.player.useSkill3(),
     );
 
     add(_attackBtn!);
@@ -292,11 +297,19 @@ class GameHud extends PositionComponent with HasGameReference<SurvivalGame> {
 /// Nút HUD tương tác có hiệu ứng nhấp
 class HudActionButton extends SpriteComponent with TapCallbacks {
   final VoidCallback onPressed;
+  final double Function()? cooldownRemaining;
+  final double totalCooldown;
+
+  final Paint _cooldownOverlayPaint = Paint()
+    ..color = const Color(0x99000000)
+    ..style = PaintingStyle.fill;
 
   HudActionButton({
     required Sprite sprite,
     required Vector2 size,
     required this.onPressed,
+    this.cooldownRemaining,
+    this.totalCooldown = 1.0,
   }) : super(
           sprite: sprite,
           size: size,
@@ -304,9 +317,44 @@ class HudActionButton extends SpriteComponent with TapCallbacks {
         );
 
   @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+
+    final cd = cooldownRemaining?.call() ?? 0.0;
+    if (cd > 0 && totalCooldown > 0) {
+      final ratio = (cd / totalCooldown).clamp(0.0, 1.0);
+      // Vẽ lớp phủ bóng mờ bán kính tương ứng tiến trình hồi chiêu
+      final rect = Rect.fromLTWH(0, 0, size.x, size.y * ratio);
+      canvas.drawRect(rect, _cooldownOverlayPaint);
+
+      // Hiển thị số giây hồi chiêu còn lại
+      final cdText = cd >= 1.0 ? cd.toStringAsFixed(0) : cd.toStringAsFixed(1);
+      final tp = TextPainter(
+        text: TextSpan(
+          text: cdText,
+          style: GameTypography.pixel(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            shadows: const [Shadow(blurRadius: 2, color: Colors.black)],
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      tp.layout();
+      tp.paint(
+        canvas,
+        Offset((size.x - tp.width) / 2, (size.y - tp.height) / 2),
+      );
+    }
+  }
+
+  @override
   void onTapDown(TapDownEvent event) {
-    scale = Vector2.all(0.9);
-    onPressed();
+    if ((cooldownRemaining?.call() ?? 0.0) <= 0) {
+      scale = Vector2.all(0.9);
+      onPressed();
+    }
   }
 
   @override

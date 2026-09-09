@@ -68,25 +68,26 @@ enum EquipmentType {
   bool get hasVisualLayer =>
       this != EquipmentType.ring && this != EquipmentType.tome;
 
-  /// Thứ tự vẽ (Z-Index) tương đối so với thân nhân vật (Body có priority = 10)
+  /// Thứ tự vẽ (Z-Index / Render Priority) tương đối giữa thân và các lớp trang bị
+  /// - 1. Lớp sau lưng: Kiếm (5), Cánh (10)
+  /// - 2. Thân nhân vật chính: BodyComponent (20)
+  /// - 3. Lớp phụ kiện sát người: Dây chuyền (25), Kính (30)
+  /// - 4. Lớp trang phục bên ngoài: Áo giáp, Mũ, Quần, Giày (40)
   int get renderPriority {
     switch (this) {
-      case EquipmentType.wings:
-        return 5; // Cánh nằm sau lưng nhân vật
-      case EquipmentType.pants:
-        return 12; // Quần mặc trên thân
-      case EquipmentType.shoes:
-        return 14; // Giầy
-      case EquipmentType.armor:
-        return 16; // Giáp ngoài
-      case EquipmentType.necklace:
-        return 18; // Dây chuyền
-      case EquipmentType.helmet:
-        return 20; // Mũ
-      case EquipmentType.glasses:
-        return 22; // Kính đeo trên mặt
       case EquipmentType.sword:
-        return 25; // Kiếm trên tay phía trước
+        return 5; // Kiếm nằm sau lưng/sau nhân vật
+      case EquipmentType.wings:
+        return 10; // Cánh nằm sau nhân vật, trước kiếm
+      case EquipmentType.necklace:
+        return 25; // Dây chuyền sát người
+      case EquipmentType.glasses:
+        return 30; // Kính đeo trên mặt
+      case EquipmentType.armor:
+      case EquipmentType.helmet:
+      case EquipmentType.pants:
+      case EquipmentType.shoes:
+        return 40; // Trang phục ngoài cùng phủ lên thân và phụ kiện
       case EquipmentType.ring:
       case EquipmentType.tome:
         return 0;
