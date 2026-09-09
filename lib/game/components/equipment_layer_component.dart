@@ -16,6 +16,7 @@ class EquipmentLayerComponent extends SpriteAnimationComponent with HasGameRefer
 
   EquipmentLayerComponent({required this.equipment})
       : super(
+          position: GameConstants.characterSize / 2,
           size: GameConstants.characterSize,
           anchor: Anchor.center,
           priority: equipment.type.renderPriority,

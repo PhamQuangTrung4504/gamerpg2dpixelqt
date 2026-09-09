@@ -43,11 +43,12 @@ class SurvivalGame extends FlameGame with HasCollisionDetection, KeyboardEvents 
     );
     await world.add(player);
 
-    // 3. Cấu hình Camera zoom 2.0x, follow Player và giới hạn trong biên bản đồ 1254x1254
+    // 3. Cấu hình Camera zoom 2.0x, follow Player và giới hạn trong biên bản đồ 1254x1254 (tránh khoảng trống đen)
     camera.viewfinder.zoom = 2.0;
     camera.follow(player);
     camera.setBounds(
       Rectangle.fromLTWH(0, 0, GameConstants.mapWidth, GameConstants.mapHeight),
+      considerViewport: true,
     );
 
     // 4. Thêm Joystick ảo lên Viewport
@@ -57,6 +58,16 @@ class SurvivalGame extends FlameGame with HasCollisionDetection, KeyboardEvents 
     // 5. Thêm HUD hiển thị HP/MP/EXP và các nút kỹ năng lên Viewport
     hud = GameHud();
     camera.viewport.add(hud);
+  }
+
+  @override
+  void onGameResize(Vector2 size) {
+    super.onGameResize(size);
+    // Cập nhật lại giới hạn Camera phù hợp với kích thước Viewport mới
+    camera.setBounds(
+      Rectangle.fromLTWH(0, 0, GameConstants.mapWidth, GameConstants.mapHeight),
+      considerViewport: true,
+    );
   }
 
   @override
@@ -93,7 +104,7 @@ class SurvivalGame extends FlameGame with HasCollisionDetection, KeyboardEvents 
     }
 
     if (!joystick.delta.isZero()) {
-      player.velocity = joystick.relativeDelta;
+      player.velocity = joystick.relativeDelta.normalized();
     } else if (!keyboardMovement.isZero()) {
       player.velocity = keyboardMovement.normalized();
     } else {

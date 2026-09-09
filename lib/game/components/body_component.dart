@@ -15,6 +15,7 @@ class BodyComponent extends SpriteAnimationComponent with HasGameReference<Survi
 
   BodyComponent()
       : super(
+          position: GameConstants.characterSize / 2,
           size: GameConstants.characterSize,
           anchor: Anchor.center,
           priority: 10,

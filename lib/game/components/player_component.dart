@@ -13,7 +13,7 @@ import 'equipment_layer_component.dart';
 
 /// Component người chơi chính kết hợp Thân và Đa lớp trang bị (Multi-layer Equipment)
 class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGame> {
-  late final BodyComponent _body;
+  final BodyComponent _body = BodyComponent();
   final Map<EquipmentType, EquipmentLayerComponent> _equipmentLayers = {};
   final Map<EquipmentType, Equipment> _equippedItems = {};
 
@@ -68,11 +68,11 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
     await super.onLoad();
 
     // Thêm Thân nhân vật
-    _body = BodyComponent();
     await add(_body);
 
     // Mặc định trang bị kiếm gỗ cho nhân vật ban đầu
     await equip(EquipmentCatalog.kiemGo);
+    _syncLayers();
   }
 
   /// Trang bị một vật phẩm
@@ -203,12 +203,16 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
 
   /// Đồng bộ hướng và trạng thái cho Thân và tất cả các lớp trang bị
   void _syncLayers() {
-    // Xử lý lật ngang (Horizontal Flip) khi quay sang phải
-    if (_direction.isRight) {
-      scale = Vector2(-1, 1);
+    // Xử lý lật ngang quanh tâm Anchor.center:
+    // Khi quay sang phải dùng scale.x = -1.0;
+    // Khi quay sang các hướng còn lại (trái, xuống, lên) trả lại scale.x = 1.0;
+    // Tuyệt đối không thay đổi position khi lật trục X.
+    if (_direction == GameDirection.right) {
+      scale.x = -1.0;
     } else {
-      scale = Vector2(1, 1);
+      scale.x = 1.0;
     }
+    scale.y = 1.0;
 
     _body.updateStateAndDirection(state: _state, direction: _direction);
     for (final layer in _equipmentLayers.values) {
