@@ -147,6 +147,7 @@ class _StatsListWidgetState extends State<StatsListWidget> {
         radius: const Radius.circular(2),
         child: ListView.separated(
           controller: _scrollController,
+          physics: const ClampingScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           itemCount: entries.length,
           separatorBuilder: (_, __) => const Divider(

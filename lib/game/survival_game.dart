@@ -20,6 +20,9 @@ class SurvivalGame extends FlameGame with HasCollisionDetection, KeyboardEvents 
   late final MonsterSpawnerComponent spawner;
   late final TutorialManager tutorialManager;
 
+  double survivalTime = 0.0;
+  bool isSurvivalTimerActive = false;
+
   final Set<LogicalKeyboardKey> _keysPressed = {};
 
   SurvivalGame()
@@ -142,6 +145,7 @@ class SurvivalGame extends FlameGame with HasCollisionDetection, KeyboardEvents 
     if (!overlays.isActive('inventory')) {
       pauseEngine();
       overlays.add('inventory');
+      tutorialManager.onInventoryOpened();
     }
   }
 
@@ -149,6 +153,7 @@ class SurvivalGame extends FlameGame with HasCollisionDetection, KeyboardEvents 
   void closeInventory() {
     if (overlays.isActive('inventory')) {
       overlays.remove('inventory');
+      tutorialManager.onInventoryClosed();
       if (!isAnyModalOpen) {
         resumeEngine();
       }
@@ -169,6 +174,7 @@ class SurvivalGame extends FlameGame with HasCollisionDetection, KeyboardEvents 
     if (!overlays.isActive('StatsOverlay')) {
       pauseEngine();
       overlays.add('StatsOverlay');
+      tutorialManager.onStatsOpened();
     }
   }
 
@@ -176,6 +182,7 @@ class SurvivalGame extends FlameGame with HasCollisionDetection, KeyboardEvents 
   void closeStats() {
     if (overlays.isActive('StatsOverlay')) {
       overlays.remove('StatsOverlay');
+      tutorialManager.onStatsClosed();
       if (!isAnyModalOpen) {
         resumeEngine();
       }
@@ -196,6 +203,7 @@ class SurvivalGame extends FlameGame with HasCollisionDetection, KeyboardEvents 
     if (!overlays.isActive('SkillOverlay')) {
       pauseEngine();
       overlays.add('SkillOverlay');
+      tutorialManager.onSkillTreeOpened();
     }
   }
 
@@ -203,6 +211,7 @@ class SurvivalGame extends FlameGame with HasCollisionDetection, KeyboardEvents 
   void closeSkillTree() {
     if (overlays.isActive('SkillOverlay')) {
       overlays.remove('SkillOverlay');
+      tutorialManager.onSkillTreeClosed();
       if (!isAnyModalOpen) {
         resumeEngine();
       }
@@ -221,6 +230,17 @@ class SurvivalGame extends FlameGame with HasCollisionDetection, KeyboardEvents 
   @override
   void update(double dt) {
     super.update(dt);
+
+    if (isSurvivalTimerActive) {
+      survivalTime += dt;
+    }
+
+    // Khóa di chuyển nhân vật trong lúc Già Làng nói chuyện hoặc Lia Camera
+    if (tutorialManager.currentStep == PrologueStep.elderDialogue ||
+        tutorialManager.currentStep == PrologueStep.cameraPan) {
+      player.velocity = Vector2.zero();
+      return;
+    }
 
     // Kết hợp input từ Joystick và Bàn phím
     final keyboardMovement = Vector2.zero();

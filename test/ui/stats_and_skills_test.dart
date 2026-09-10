@@ -107,12 +107,17 @@ void main() {
   });
 
   group('Skill Tree Progression & Level-Requirement Tests', () {
-    test('Default skill levels are 1 for all skills', () {
+    test('Default skill levels: Only danhThuong is 1, 3 active skills start locked at 0', () {
       final player = PlayerComponent();
       expect(player.getSkillLevel(SkillCatalog.danhThuong.id), equals(1));
-      expect(player.getSkillLevel(SkillCatalog.lietHoaDoatMenh.id), equals(1));
-      expect(player.getSkillLevel(SkillCatalog.vanKiemQuyTong.id), equals(1));
-      expect(player.getSkillLevel(SkillCatalog.nguKiemPhiKiem.id), equals(1));
+      expect(player.getSkillLevel(SkillCatalog.lietHoaDoatMenh.id), equals(0));
+      expect(player.getSkillLevel(SkillCatalog.vanKiemQuyTong.id), equals(0));
+      expect(player.getSkillLevel(SkillCatalog.nguKiemPhiKiem.id), equals(0));
+      expect(player.isSkillUnlocked(SkillCatalog.danhThuong.id), isTrue);
+      expect(player.isSkillUnlocked(SkillCatalog.lietHoaDoatMenh.id), isFalse);
+
+      final playerAllUnlocked = PlayerComponent(unlockAllSkills: true);
+      expect(playerAllUnlocked.getSkillLevel(SkillCatalog.lietHoaDoatMenh.id), equals(1));
     });
 
     test('Cannot upgrade skill if required character level is not met', () {
@@ -140,10 +145,11 @@ void main() {
       expect(player.expManager.currentLevel, equals(6));
       expect(player.expManager.skillPoints, equals(5));
 
-      // Now Liệt Hỏa Đoạt Mệnh (required level 6) can be upgraded!
+      // Now Liệt Hỏa Đoạt Mệnh (required level 6) can be unlocked to Level 1!
       expect(player.canUpgradeSkill(SkillCatalog.lietHoaDoatMenh), isTrue);
       expect(player.upgradeSkill(SkillCatalog.lietHoaDoatMenh), isTrue);
-      expect(player.getSkillLevel(SkillCatalog.lietHoaDoatMenh.id), equals(2));
+      expect(player.getSkillLevel(SkillCatalog.lietHoaDoatMenh.id), equals(1));
+      expect(player.isSkillUnlocked(SkillCatalog.lietHoaDoatMenh.id), isTrue);
       expect(player.expManager.skillPoints, equals(4));
 
       // Vạn Kiếm Quy Tông (required level 11) is still locked

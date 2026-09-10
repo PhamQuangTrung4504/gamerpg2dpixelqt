@@ -1,7 +1,9 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../core/game_typography.dart';
 import '../../game/components/player_component.dart';
 import '../../game/survival_game.dart';
+import '../../game/tutorial/tutorial_manager.dart';
 import '../../models/attribute_type.dart';
 import '../inventory/nine_slice_box.dart';
 
@@ -15,17 +17,26 @@ class CharacterStatsOverlay extends StatefulWidget {
   State<CharacterStatsOverlay> createState() => _CharacterStatsOverlayState();
 }
 
-class _CharacterStatsOverlayState extends State<CharacterStatsOverlay> {
+class _CharacterStatsOverlayState extends State<CharacterStatsOverlay>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _bounceController;
   PlayerComponent get _player => widget.game.player;
 
   @override
   void initState() {
     super.initState();
+    _bounceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
     _player.inventoryNotifier.addListener(_onStateChanged);
+    widget.game.tutorialManager.addListener(_onStateChanged);
   }
 
   @override
   void dispose() {
+    _bounceController.dispose();
+    widget.game.tutorialManager.removeListener(_onStateChanged);
     _player.inventoryNotifier.removeListener(_onStateChanged);
     super.dispose();
   }
@@ -150,6 +161,61 @@ class _CharacterStatsOverlayState extends State<CharacterStatsOverlay> {
 
                           const SizedBox(height: 6),
 
+                          if (widget.game.tutorialManager.currentStep == PrologueStep.exitStats) ...[
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0x3381C784),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: const Color(0xFF81C784), width: 1),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.check_circle, size: 14, color: Color(0xFF81C784)),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      'Cộng điểm thành công! Nhấn nút [X] ở góc phải để hoàn thành tân thủ!',
+                                      style: GameTypography.pixel(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ] else if (points > 0) ...[
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0x33FFD54F),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: const Color(0x88FFD54F), width: 1),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.lightbulb_outline, size: 14, color: Color(0xFFFFD54F)),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      widget.game.tutorialManager.currentStep == PrologueStep.upgradeStats
+                                          ? 'Mũi tên chỉ dẫn: Nhấn các nút [+] màu vàng để gia tăng Máu, Tấn Công hoặc Giáp!'
+                                          : 'Gợi ý: Nhấn nút [+] để cộng điểm vào Máu (sinh tồn), Tấn Công (sát thương) hoặc Giáp (giảm sát thương nhận)!',
+                                      style: GameTypography.pixel(
+                                        color: const Color(0xFFFFF9C4),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+
                           // Danh sách 6 dòng thuộc tính
                           Expanded(
                             child: ListView.separated(
@@ -230,7 +296,13 @@ class _CharacterStatsOverlayState extends State<CharacterStatsOverlay> {
                                       MouseRegion(
                                         cursor: canAdd ? SystemMouseCursors.click : SystemMouseCursors.basic,
                                         child: GestureDetector(
-                                          onTap: canAdd ? () => _player.upgradeAttribute(attr) : null,
+                                          onTap: canAdd
+                                              ? () {
+                                                  _player.upgradeAttribute(attr);
+                                                  widget.game.tutorialManager.onStatUpgraded();
+                                                  setState(() {});
+                                                }
+                                              : null,
                                           child: Opacity(
                                             opacity: canAdd ? 1.0 : 0.5,
                                             child: Container(
@@ -318,6 +390,48 @@ class _CharacterStatsOverlayState extends State<CharacterStatsOverlay> {
                       ),
                     ),
                   ),
+
+                  // Mũi tên nhấp nhô trỏ thẳng vào nút Thoát [X] khi đã cộng điểm xong
+                  if (widget.game.tutorialManager.currentStep == PrologueStep.exitStats)
+                    Positioned(
+                      top: 38,
+                      right: 8,
+                      child: AnimatedBuilder(
+                        animation: _bounceController,
+                        builder: (context, child) {
+                          final bounce = sin(_bounceController.value * pi) * 3.0;
+                          return Transform.translate(
+                            offset: Offset(0, bounce),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xEE2E7D32),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: const Color(0xFFA5D6A7), width: 1),
+                                boxShadow: const [
+                                  BoxShadow(color: Colors.black87, blurRadius: 5),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.arrow_upward, color: Color(0xFFFFD54F), size: 14),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Bấm [X] để hoàn thành!',
+                                    style: GameTypography.pixel(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                 ],
               ),
             ),

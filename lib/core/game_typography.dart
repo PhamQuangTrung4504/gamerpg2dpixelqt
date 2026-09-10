@@ -12,6 +12,7 @@ class GameTypography {
     FontWeight fontWeight = FontWeight.normal,
     List<Shadow>? shadows,
     double? letterSpacing,
+    double? height,
   }) {
     return GoogleFonts.vt323(
       color: color,
@@ -19,6 +20,7 @@ class GameTypography {
       fontWeight: fontWeight,
       shadows: shadows,
       letterSpacing: letterSpacing,
+      height: height,
     );
   }
 }

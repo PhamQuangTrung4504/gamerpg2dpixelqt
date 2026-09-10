@@ -1,7 +1,9 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../core/game_typography.dart';
 import '../../game/components/player_component.dart';
 import '../../game/survival_game.dart';
+import '../../game/tutorial/tutorial_manager.dart';
 import '../../models/skill.dart';
 import '../inventory/nine_slice_box.dart';
 
@@ -15,19 +17,28 @@ class SkillTreeOverlay extends StatefulWidget {
   State<SkillTreeOverlay> createState() => _SkillTreeOverlayState();
 }
 
-class _SkillTreeOverlayState extends State<SkillTreeOverlay> {
+class _SkillTreeOverlayState extends State<SkillTreeOverlay>
+    with SingleTickerProviderStateMixin {
   Skill _selectedSkill = SkillCatalog.danhThuong;
+  late AnimationController _bounceController;
 
   PlayerComponent get _player => widget.game.player;
 
   @override
   void initState() {
     super.initState();
+    _bounceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
     _player.inventoryNotifier.addListener(_onStateChanged);
+    widget.game.tutorialManager.addListener(_onStateChanged);
   }
 
   @override
   void dispose() {
+    _bounceController.dispose();
+    widget.game.tutorialManager.removeListener(_onStateChanged);
     _player.inventoryNotifier.removeListener(_onStateChanged);
     super.dispose();
   }
@@ -119,6 +130,61 @@ class _SkillTreeOverlayState extends State<SkillTreeOverlay> {
 
                           const SizedBox(height: 6),
 
+                          if (widget.game.tutorialManager.currentStep == PrologueStep.exitSkillTree) ...[
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0x3381C784),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: const Color(0xFF81C784), width: 1),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.check_circle, size: 14, color: Color(0xFF81C784)),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      'Học kỹ năng thành công! Nhấn nút [X] ở góc phải để tiếp tục hướng dẫn!',
+                                      style: GameTypography.pixel(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ] else if (skillPoints > 0) ...[
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0x33FFD54F),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: const Color(0x88FFD54F), width: 1),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.lightbulb_outline, size: 14, color: Color(0xFFFFD54F)),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      widget.game.tutorialManager.currentStep == PrologueStep.upgradeSkill
+                                          ? 'Mũi tên chỉ dẫn: Chọn kỹ năng và nhấn "Học Kỹ Năng / Nâng Cấp"!'
+                                          : 'Gợi ý: Chọn kỹ năng và nhấn "Học Kỹ Năng" để mở khóa chiêu thức chiến đấu mới!',
+                                      style: GameTypography.pixel(
+                                        color: const Color(0xFFFFF9C4),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+
                           // Thân modal: 2 cột (Danh sách 4 kỹ năng bên trái + Khung soi chi tiết bên phải)
                           Expanded(
                             child: Row(
@@ -196,37 +262,49 @@ class _SkillTreeOverlayState extends State<SkillTreeOverlay> {
                                                           fontWeight: FontWeight.bold,
                                                         ),
                                                       ),
-                                                      const SizedBox(height: 1),
                                                       Row(
-                                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                        children: [
-                                                          Text(
-                                                            'Cấp $currentLevel / ${skill.maxSkillLevel}',
-                                                            style: GameTypography.pixel(
-                                                              color: const Color(0xFFFFD54F),
-                                                              fontSize: 12,
-                                                              fontWeight: FontWeight.bold,
-                                                            ),
-                                                          ),
-                                                          if (isLocked)
-                                                            Text(
-                                                              'Lv.${skill.requiredCharacterLevel}',
-                                                              style: GameTypography.pixel(
-                                                                color: const Color(0xFFEF5350),
-                                                                fontSize: 11,
-                                                                fontWeight: FontWeight.bold,
-                                                              ),
-                                                            )
-                                                          else
-                                                            Text(
-                                                              'Đã mở',
-                                                              style: GameTypography.pixel(
-                                                                color: const Color(0xFF81C784),
-                                                                fontSize: 11,
-                                                              ),
-                                                            ),
-                                                        ],
-                                                      ),
+                                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                         children: [
+                                                           Text(
+                                                             currentLevel == 0
+                                                                 ? 'Chưa học (Cấp 0)'
+                                                                 : 'Cấp $currentLevel / ${skill.maxSkillLevel}',
+                                                             style: GameTypography.pixel(
+                                                               color: currentLevel == 0
+                                                                   ? const Color(0xFFB0BEC5)
+                                                                   : const Color(0xFFFFD54F),
+                                                               fontSize: 12,
+                                                               fontWeight: FontWeight.bold,
+                                                             ),
+                                                           ),
+                                                           if (isLocked)
+                                                             Text(
+                                                               'Lv.${skill.requiredCharacterLevel}',
+                                                               style: GameTypography.pixel(
+                                                                 color: const Color(0xFFEF5350),
+                                                                 fontSize: 11,
+                                                                 fontWeight: FontWeight.bold,
+                                                               ),
+                                                             )
+                                                           else if (currentLevel == 0)
+                                                             Text(
+                                                               'Có thể học',
+                                                               style: GameTypography.pixel(
+                                                                 color: const Color(0xFFFFD54F),
+                                                                 fontSize: 11,
+                                                                 fontWeight: FontWeight.bold,
+                                                               ),
+                                                             )
+                                                           else
+                                                             Text(
+                                                               'Đã mở',
+                                                               style: GameTypography.pixel(
+                                                                 color: const Color(0xFF81C784),
+                                                                 fontSize: 11,
+                                                               ),
+                                                             ),
+                                                         ],
+                                                       ),
                                                     ],
                                                   ),
                                                 ),
@@ -282,6 +360,47 @@ class _SkillTreeOverlayState extends State<SkillTreeOverlay> {
                       ),
                     ),
                   ),
+                  // Mũi tên nhấp nhô trỏ thẳng vào nút Thoát [X] khi đã nâng kỹ năng xong
+                  if (widget.game.tutorialManager.currentStep == PrologueStep.exitSkillTree)
+                    Positioned(
+                      top: 38,
+                      right: 8,
+                      child: AnimatedBuilder(
+                        animation: _bounceController,
+                        builder: (context, child) {
+                          final bounce = sin(_bounceController.value * pi) * 3.0;
+                          return Transform.translate(
+                            offset: Offset(0, bounce),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xEE2E7D32),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: const Color(0xFFA5D6A7), width: 1),
+                                boxShadow: const [
+                                  BoxShadow(color: Colors.black87, blurRadius: 5),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.arrow_upward, color: Color(0xFFFFD54F), size: 14),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Bấm [X] để tiếp tục!',
+                                    style: GameTypography.pixel(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -298,7 +417,7 @@ class _SkillTreeOverlayState extends State<SkillTreeOverlay> {
     final isLocked = playerLevel < skill.requiredCharacterLevel;
     final canUpgrade = _player.canUpgradeSkill(skill);
 
-    final currentData = skill.getDataForLevel(currentLevel);
+    final currentData = skill.getDataForLevel(currentLevel == 0 ? 1 : currentLevel);
     final nextData = isMax ? null : skill.getDataForLevel(currentLevel + 1);
 
     return NineSliceBox.inspectPanel(
@@ -323,7 +442,9 @@ class _SkillTreeOverlayState extends State<SkillTreeOverlay> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '${skill.name} (Cấp $currentLevel / ${skill.maxSkillLevel})',
+                      currentLevel == 0
+                          ? '${skill.name} (Chưa học - Tối đa Cấp ${skill.maxSkillLevel})'
+                          : '${skill.name} (Cấp $currentLevel / ${skill.maxSkillLevel})',
                       style: GameTypography.pixel(
                         color: const Color(0xFFFFD54F),
                         fontSize: 15,
@@ -477,37 +598,80 @@ class _SkillTreeOverlayState extends State<SkillTreeOverlay> {
 
           // Nút Nâng Cấp
           Center(
-            child: isMax
-                ? Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0x66FFD54F),
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: const Color(0xFFFFD54F)),
-                    ),
-                    child: Text(
-                      'ĐÃ ĐẠT CẤP TỐI ĐA (MAX LEVEL)',
-                      style: GameTypography.pixel(
-                        color: const Color(0xFFFFD54F),
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  )
-                : NineSliceButton(
-                    text: isLocked
-                        ? 'Cần Level ${skill.requiredCharacterLevel}'
-                        : 'Nâng Cấp (1 Điểm)',
-                    width: 160,
-                    height: 30,
-                    enabled: canUpgrade,
-                    onPressed: canUpgrade
-                        ? () {
-                            _player.upgradeSkill(skill);
-                            setState(() {});
-                          }
-                        : null,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (widget.game.tutorialManager.currentStep == PrologueStep.upgradeSkill && canUpgrade)
+                  AnimatedBuilder(
+                    animation: _bounceController,
+                    builder: (context, child) {
+                      final bounce = sin(_bounceController.value * pi) * 2.5;
+                      return Transform.translate(
+                        offset: Offset(0, bounce),
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xEE2E7D32),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: const Color(0xFFA5D6A7), width: 1),
+                            boxShadow: const [
+                              BoxShadow(color: Colors.black87, blurRadius: 4),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.arrow_downward, color: Color(0xFFFFD54F), size: 12),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Bấm vào đây để nâng cấp!',
+                                style: GameTypography.pixel(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
+                isMax
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0x66FFD54F),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: const Color(0xFFFFD54F)),
+                        ),
+                        child: Text(
+                          'ĐÃ ĐẠT CẤP TỐI ĐA (MAX LEVEL)',
+                          style: GameTypography.pixel(
+                            color: const Color(0xFFFFD54F),
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )
+                    : NineSliceButton(
+                        text: isLocked
+                            ? 'Cần Level ${skill.requiredCharacterLevel}'
+                            : (currentLevel == 0 ? 'Học Kỹ Năng (1 Điểm)' : 'Nâng Cấp (1 Điểm)'),
+                        width: 175,
+                        height: 30,
+                        enabled: canUpgrade,
+                        onPressed: canUpgrade
+                            ? () {
+                                _player.upgradeSkill(skill);
+                                widget.game.tutorialManager.onSkillUpgraded();
+                                setState(() {});
+                              }
+                            : null,
+                      ),
+              ],
+            ),
           ),
         ],
       ),

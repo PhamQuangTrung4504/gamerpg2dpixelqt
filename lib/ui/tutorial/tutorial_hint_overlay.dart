@@ -46,14 +46,21 @@ class _TutorialHintOverlayState extends State<TutorialHintOverlay>
   Widget build(BuildContext context) {
     final tutorial = widget.game.tutorialManager;
     final step = tutorial.currentStep;
+    final levelUpHint = tutorial.levelUpHint;
+    final isInventoryOpen = widget.game.overlays.isActive('inventory');
+    final isSkillTreeOpen = widget.game.overlays.isActive('SkillOverlay');
+    final isStatsOpen = widget.game.overlays.isActive('StatsOverlay');
+    final isAnyModalOpen = isInventoryOpen || isSkillTreeOpen || isStatsOpen;
 
-    if (step == PrologueStep.none || step == PrologueStep.dialogue || step == PrologueStep.cameraPan) {
+    if (step == PrologueStep.none && levelUpHint == null) {
       return const SizedBox.shrink();
     }
 
-    final hintText = tutorial.currentHintText;
-    final showChestArrow = step == PrologueStep.equipSword && !widget.game.overlays.isActive('inventory');
-    final showInventoryArrow = step == PrologueStep.equipSword && widget.game.overlays.isActive('inventory');
+    final isLevelUp = levelUpHint != null;
+    final hintText = levelUpHint ?? (isAnyModalOpen ? '' : tutorial.currentHintText);
+    final showChestArrow = step == PrologueStep.openInventory && !isInventoryOpen;
+    final showSkillArrow = step == PrologueStep.openSkillTree && !isSkillTreeOpen;
+    final showStatsArrow = step == PrologueStep.openStats && !isStatsOpen;
 
     // Toàn bộ Overlay hướng dẫn/banner nổi được bọc IgnorePointer
     // để người chơi chạm xuyên qua điều khiển Joystick và các nút bấm bên dưới
@@ -76,9 +83,11 @@ class _TutorialHintOverlayState extends State<TutorialHintOverlay>
                     color: const Color(0xDD1A1A1A),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
-                      color: step == PrologueStep.completed
-                          ? const Color(0xFF81C784)
-                          : const Color(0xFFFFD54F),
+                      color: isLevelUp
+                          ? const Color(0xFFFF5252)
+                          : (step == PrologueStep.completed
+                              ? const Color(0xFF81C784)
+                              : const Color(0xFFFFD54F)),
                       width: 1.5,
                     ),
                     boxShadow: const [
@@ -89,12 +98,16 @@ class _TutorialHintOverlayState extends State<TutorialHintOverlay>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        step == PrologueStep.completed
-                            ? Icons.check_circle
-                            : Icons.lightbulb,
-                        color: step == PrologueStep.completed
-                            ? const Color(0xFF81C784)
-                            : const Color(0xFFFFD54F),
+                        isLevelUp
+                            ? Icons.arrow_circle_up
+                            : (step == PrologueStep.completed
+                                ? Icons.check_circle
+                                : Icons.lightbulb),
+                        color: isLevelUp
+                            ? const Color(0xFFFF5252)
+                            : (step == PrologueStep.completed
+                                ? const Color(0xFF81C784)
+                                : const Color(0xFFFFD54F)),
                         size: 20,
                       ),
                       const SizedBox(width: 8),
@@ -159,46 +172,88 @@ class _TutorialHintOverlayState extends State<TutorialHintOverlay>
               },
             ),
 
-          // 3. Mũi tên nhấp nhô bên trong Túi Đồ chỉ vào Kiếm Gỗ
-          if (showInventoryArrow)
+          // 3. Mũi tên nhấp nhô chỉ vào icon Kỹ Năng (góc trên bên phải)
+          if (showSkillArrow)
             AnimatedBuilder(
               animation: _bounceController,
               builder: (context, child) {
-                final offsetX = sin(_bounceController.value * pi) * 6.0;
-                return Align(
-                  alignment: Alignment.center,
+                final offsetY = sin(_bounceController.value * pi) * 6.0;
+                return Positioned(
+                  top: 62 + offsetY,
+                  right: 74,
                   child: IgnorePointer(
-                    child: Container(
-                      margin: EdgeInsets.only(left: 140 + offsetX, top: 20),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xEE2E7D32),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: const Color(0xFFA5D6A7), width: 1.5),
-                        boxShadow: const [
-                          BoxShadow(color: Colors.black87, blurRadius: 6),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.arrow_back, color: Colors.white, size: 16),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Nhấp Kiếm Gỗ -> Bấm "Trang Bị"!',
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CustomPaint(
+                          size: const Size(24, 24),
+                          painter: PixelArrowPainter(isPointingUp: true),
+                        ),
+                        const SizedBox(height: 2),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xDD000000),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: const Color(0xFFFFD54F)),
+                          ),
+                          child: Text(
+                            'Kỹ Năng',
                             style: GameTypography.pixel(
-                              color: Colors.white,
-                              fontSize: 14,
+                              color: const Color(0xFFFFD54F),
+                              fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 );
               },
             ),
+
+          // 4. Mũi tên nhấp nhô chỉ vào icon Thuộc Tính (góc trên bên phải)
+          if (showStatsArrow)
+            AnimatedBuilder(
+              animation: _bounceController,
+              builder: (context, child) {
+                final offsetY = sin(_bounceController.value * pi) * 6.0;
+                return Positioned(
+                  top: 62 + offsetY,
+                  right: 118,
+                  child: IgnorePointer(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CustomPaint(
+                          size: const Size(24, 24),
+                          painter: PixelArrowPainter(isPointingUp: true),
+                        ),
+                        const SizedBox(height: 2),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xDD000000),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: const Color(0xFFFFD54F)),
+                          ),
+                          child: Text(
+                            'Thuộc Tính',
+                            style: GameTypography.pixel(
+                              color: const Color(0xFFFFD54F),
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+
         ],
       ),
     ),

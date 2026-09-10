@@ -13,6 +13,7 @@ import '../../models/skill.dart';
 import '../survival_game.dart';
 import 'body_component.dart';
 import 'equipment_layer_component.dart';
+import 'floating_text_component.dart';
 import 'monster_component.dart';
 import 'skills/basic_slash_effect.dart';
 import 'skills/flame_slash_projectile.dart';
@@ -49,9 +50,9 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
   // Cấp độ của các kỹ năng (khởi đầu cấp 1)
   final Map<String, int> _skillLevels = {
     SkillCatalog.danhThuong.id: 1,
-    SkillCatalog.lietHoaDoatMenh.id: 1,
-    SkillCatalog.vanKiemQuyTong.id: 1,
-    SkillCatalog.nguKiemPhiKiem.id: 1,
+    SkillCatalog.lietHoaDoatMenh.id: 0,
+    SkillCatalog.vanKiemQuyTong.id: 0,
+    SkillCatalog.nguKiemPhiKiem.id: 0,
   };
 
   // Vector di chuyển từ input (Joystick hoặc Bàn phím)
@@ -78,18 +79,28 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
   PlayerComponent({
     Vector2? initialPosition,
     bool startWithSword = true,
+    bool unlockAllSkills = false,
   })  : super(
           position: initialPosition ?? Vector2(GameConstants.mapWidth / 2, GameConstants.mapHeight / 2),
           size: GameConstants.characterSize,
           anchor: Anchor.center,
           priority: 10,
         ) {
+    if (unlockAllSkills) {
+      _skillLevels[SkillCatalog.lietHoaDoatMenh.id] = 1;
+      _skillLevels[SkillCatalog.vanKiemQuyTong.id] = 1;
+      _skillLevels[SkillCatalog.nguKiemPhiKiem.id] = 1;
+    }
+
     _expManager = ExpManager(
       onLevelUp: (newLevel, skillPointsGained) {
         // Tự động hồi đầy HP và MP khi thăng cấp
         _currentHp = _totalStats.maxHp;
         _currentMp = _totalStats.maxMp;
         notifyInventoryChanged();
+        if (isMounted) {
+          game.tutorialManager.triggerLevelUpHint();
+        }
       },
     );
 
@@ -142,8 +153,17 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
     return true;
   }
 
-  /// Lấy cấp độ hiện tại của một kỹ năng
-  int getSkillLevel(String skillId) => _skillLevels[skillId] ?? 1;
+  /// Lấy cấp độ hiện tại của một kỹ năng (0 nếu chưa học)
+  int getSkillLevel(String skillId) => _skillLevels[skillId] ?? 0;
+
+  /// Kiểm tra xem kỹ năng đã được mở khóa hay chưa (Level >= 1)
+  bool isSkillUnlocked(String skillId) => getSkillLevel(skillId) > 0;
+
+  /// Mở khóa trực tiếp kỹ năng (dùng cho tests hoặc cheat)
+  void unlockSkill(String skillId, {int level = 1}) {
+    _skillLevels[skillId] = level;
+    notifyInventoryChanged();
+  }
 
   /// Kiểm tra có thể nâng cấp kỹ năng hay không
   bool canUpgradeSkill(Skill skill) {
@@ -345,8 +365,14 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
 
   /// Kỹ năng 1: Liệt Hỏa Đoạt Mệnh (Kiếm khí lửa xuyên thấu bay thẳng 250px)
   bool useSkill1() {
-    if (skill1CooldownRemaining > 0) return false;
     final skillLevel = getSkillLevel(SkillCatalog.lietHoaDoatMenh.id);
+    if (skillLevel <= 0) {
+      if (isMounted) {
+        game.world.add(FloatingTextComponent.info(position: position.clone(), text: 'Kỹ năng chưa mở khóa!'));
+      }
+      return false;
+    }
+    if (skill1CooldownRemaining > 0) return false;
     final skillData = SkillCatalog.lietHoaDoatMenh.getDataForLevel(skillLevel);
 
     if (!consumeMp(skillData.manaCost)) return false;
@@ -370,8 +396,14 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
 
   /// Kỹ năng 2: Vạn Kiếm Quy Tông (Kiếm trận bán kính 90px, 3 đợt cự kiếm + làm chậm)
   bool useSkill2() {
-    if (skill2CooldownRemaining > 0) return false;
     final skillLevel = getSkillLevel(SkillCatalog.vanKiemQuyTong.id);
+    if (skillLevel <= 0) {
+      if (isMounted) {
+        game.world.add(FloatingTextComponent.info(position: position.clone(), text: 'Kỹ năng chưa mở khóa!'));
+      }
+      return false;
+    }
+    if (skill2CooldownRemaining > 0) return false;
     final skillData = SkillCatalog.vanKiemQuyTong.getDataForLevel(skillLevel);
 
     if (!consumeMp(skillData.manaCost)) return false;
@@ -396,8 +428,14 @@ class PlayerComponent extends PositionComponent with HasGameReference<SurvivalGa
 
   /// Kỹ năng 3: Ngự Kiếm Hộ Thể / Phi Kiếm (Khiên xoay buff thủ 3s sau đó phóng 6 phi kiếm)
   bool useSkill3() {
-    if (skill3CooldownRemaining > 0) return false;
     final skillLevel = getSkillLevel(SkillCatalog.nguKiemPhiKiem.id);
+    if (skillLevel <= 0) {
+      if (isMounted) {
+        game.world.add(FloatingTextComponent.info(position: position.clone(), text: 'Kỹ năng chưa mở khóa!'));
+      }
+      return false;
+    }
+    if (skill3CooldownRemaining > 0) return false;
     final skillData = SkillCatalog.nguKiemPhiKiem.getDataForLevel(skillLevel);
 
     if (!consumeMp(skillData.manaCost)) return false;

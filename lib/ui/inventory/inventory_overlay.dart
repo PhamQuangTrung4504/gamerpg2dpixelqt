@@ -1,8 +1,10 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../constants/equipment_types.dart';
 import '../../core/game_typography.dart';
 import '../../game/components/player_component.dart';
 import '../../game/survival_game.dart';
+import '../../game/tutorial/tutorial_manager.dart';
 import '../../models/equipment.dart';
 import 'character_preview_widget.dart';
 import 'equipment_slot_widget.dart';
@@ -20,8 +22,10 @@ class InventoryOverlay extends StatefulWidget {
   State<InventoryOverlay> createState() => _InventoryOverlayState();
 }
 
-class _InventoryOverlayState extends State<InventoryOverlay> {
+class _InventoryOverlayState extends State<InventoryOverlay>
+    with SingleTickerProviderStateMixin {
   final ScrollController _inventoryScrollController = ScrollController();
+  late AnimationController _bounceController;
 
   Equipment? _inspectedItem;
   bool _isInspectedItemEquipped = false;
@@ -33,10 +37,17 @@ class _InventoryOverlayState extends State<InventoryOverlay> {
   void initState() {
     super.initState();
     _player.inventoryNotifier.addListener(_onPlayerStateChanged);
+    widget.game.tutorialManager.addListener(_onPlayerStateChanged);
+    _bounceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
+    _bounceController.dispose();
+    widget.game.tutorialManager.removeListener(_onPlayerStateChanged);
     _player.inventoryNotifier.removeListener(_onPlayerStateChanged);
     _inventoryScrollController.dispose();
     super.dispose();
@@ -78,6 +89,10 @@ class _InventoryOverlayState extends State<InventoryOverlay> {
   Future<void> _equipItem(Equipment item) async {
     _closeInspect();
     await _player.equipFromInventory(item);
+    if (widget.game.tutorialManager.currentStep == PrologueStep.equipSword &&
+        item.id == EquipmentCatalog.kiemGo.id) {
+      widget.game.tutorialManager.onSwordEquipped();
+    }
   }
 
   void _unequipItem(EquipmentType type) {
@@ -95,6 +110,9 @@ class _InventoryOverlayState extends State<InventoryOverlay> {
     final equipped = _player.equippedItems;
     final inventory = _player.inventory;
     final playerLevel = _player.expManager.currentLevel;
+    final step = widget.game.tutorialManager.currentStep;
+    final isEquipTutorial = step == PrologueStep.equipSword;
+    final isReadyToExitTutorial = step == PrologueStep.exitInventory;
 
     return Material(
       color: const Color(0xD8000000),
@@ -121,6 +139,7 @@ class _InventoryOverlayState extends State<InventoryOverlay> {
                       // ==========================================
                       Expanded(
                         child: NineSliceBox.largePanel(
+                          height: modalHeight,
                           padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -276,6 +295,7 @@ class _InventoryOverlayState extends State<InventoryOverlay> {
                       // ==========================================
                       Expanded(
                         child: NineSliceBox.largePanel(
+                          height: modalHeight,
                           padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -347,6 +367,7 @@ class _InventoryOverlayState extends State<InventoryOverlay> {
                                     radius: const Radius.circular(2),
                                     child: GridView.builder(
                                       controller: _inventoryScrollController,
+                                      physics: const ClampingScrollPhysics(),
                                       padding: const EdgeInsets.only(right: 6),
                                       itemCount: PlayerComponent.maxInventorySlots,
                                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -357,9 +378,15 @@ class _InventoryOverlayState extends State<InventoryOverlay> {
                                       ),
                                       itemBuilder: (context, index) {
                                         final item = (index < inventory.length) ? inventory[index] : null;
+                                        final isSwordTutorialTarget = isEquipTutorial &&
+                                            _inspectedItem == null &&
+                                            item != null &&
+                                            item.id == EquipmentCatalog.kiemGo.id;
+
                                         return EquipmentSlotWidget(
                                           item: item,
                                           isSelected: _inspectedItem == item && item != null,
+                                          isHighlighted: isSwordTutorialTarget,
                                           onTap: item != null ? () => _inspectInventoryItem(item) : null,
                                         );
                                       },
@@ -449,6 +476,102 @@ class _InventoryOverlayState extends State<InventoryOverlay> {
                 ),
               ),
 
+              // Banner hướng dẫn tân thủ (nằm trên đỉnh Stack, không bị 2 panel che khuất)
+              if (isEquipTutorial || isReadyToExitTutorial)
+                Positioned(
+                  top: 10,
+                  left: 20,
+                  right: 60,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xEE141414),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: isReadyToExitTutorial
+                              ? const Color(0xFF81C784)
+                              : const Color(0xFFFFD54F),
+                          width: 1.5,
+                        ),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black87, blurRadius: 8, offset: Offset(0, 3)),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isReadyToExitTutorial
+                                ? Icons.check_circle
+                                : Icons.lightbulb,
+                            color: isReadyToExitTutorial
+                                ? const Color(0xFF81C784)
+                                : const Color(0xFFFFD54F),
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              isReadyToExitTutorial
+                                  ? 'Trang bị Kiếm Gỗ thành công! Nhấn [X] để tiếp tục hướng dẫn!'
+                                  : 'Hãy chọn Kiếm Gỗ trong Túi Đồ và nhấn nút "Trang Bị" để sẵn sàng chiến đấu!',
+                              style: GameTypography.pixel(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+              // Mũi tên nhấp nhô trỏ thẳng vào nút Thoát [X] màu đỏ khi đã trang bị xong
+              if (isReadyToExitTutorial)
+                Positioned(
+                  top: 44,
+                  right: 12,
+                  child: AnimatedBuilder(
+                    animation: _bounceController,
+                    builder: (context, child) {
+                      final bounce = sin(_bounceController.value * pi) * 3.0;
+                      return Transform.translate(
+                        offset: Offset(0, bounce),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xEE2E7D32),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: const Color(0xFFA5D6A7), width: 1),
+                            boxShadow: const [
+                              BoxShadow(color: Colors.black87, blurRadius: 5),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.arrow_upward, color: Color(0xFFFFD54F), size: 14),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Bấm nút [X] để thoát!',
+                                style: GameTypography.pixel(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
               // Popup soi đồ chi tiết (ItemDetailTooltip) nếu đang nhấp vào món đồ
               if (_inspectedItem != null)
                 GestureDetector(
@@ -463,6 +586,9 @@ class _InventoryOverlayState extends State<InventoryOverlay> {
                         item: _inspectedItem!,
                         isEquipped: _isInspectedItemEquipped,
                         playerLevel: playerLevel,
+                        isTutorialEquipTarget: isEquipTutorial &&
+                            !_isInspectedItemEquipped &&
+                            _inspectedItem?.id == EquipmentCatalog.kiemGo.id,
                         onEquip: () => _equipItem(_inspectedItem!),
                         onUnequip: () {
                           if (_inspectedEquippedType != null) {

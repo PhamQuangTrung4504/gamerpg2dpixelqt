@@ -46,6 +46,7 @@ class MonsterComponent extends SpriteAnimationGroupComponent<CharacterState>
         );
 
   bool get isDead => _isDead;
+  bool isAiActive = true;
 
   @override
   Future<void> onLoad() async {
@@ -135,6 +136,12 @@ class MonsterComponent extends SpriteAnimationGroupComponent<CharacterState>
       scale.x = 1.0; // Quay sang trái
     }
     scale.y = 1.0;
+
+    // Nếu AI chưa kích hoạt (trong lúc Trưởng Làng nói chuyện hoặc Lia Camera), quái đứng yên tại chỗ
+    if (!isAiActive) {
+      current = CharacterState.idle;
+      return;
+    }
 
     // AI Chiến đấu & Di chuyển
     if (distance <= meleeRange) {

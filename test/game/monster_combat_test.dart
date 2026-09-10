@@ -63,7 +63,7 @@ void main() {
     });
 
     test('Player active skills, MP consumption and Cooldown management', () {
-      final player = PlayerComponent();
+      final player = PlayerComponent(unlockAllSkills: true);
       expect(player.currentMp, 100.0);
       expect(player.attackCooldownRemaining, 0.0);
       expect(player.skill1CooldownRemaining, 0.0);

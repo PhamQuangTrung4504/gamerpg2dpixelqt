@@ -3,7 +3,9 @@ import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
 import '../../core/asset_paths.dart';
 import '../../core/game_typography.dart';
+import '../../models/skill.dart';
 import '../survival_game.dart';
+import 'floating_text_component.dart';
 
 /// HUD hiển thị thanh máu (HP), năng lượng (MP), kinh nghiệm (EXP) và các nút kỹ năng
 class GameHud extends PositionComponent with HasGameReference<SurvivalGame> {
@@ -167,6 +169,8 @@ class GameHud extends PositionComponent with HasGameReference<SurvivalGame> {
     _skill1Btn = HudActionButton(
       sprite: s1Sprite,
       size: Vector2.all(48.0),
+      isUnlocked: () => game.player.isSkillUnlocked(SkillCatalog.lietHoaDoatMenh.id),
+      onLockedTap: () => game.world.add(FloatingTextComponent.info(position: game.player.position.clone(), text: 'Kỹ năng chưa mở khóa!')),
       cooldownRemaining: () => game.player.skill1CooldownRemaining,
       totalCooldown: 3.5,
       onPressed: () => game.player.useSkill1(),
@@ -175,6 +179,8 @@ class GameHud extends PositionComponent with HasGameReference<SurvivalGame> {
     _skill2Btn = HudActionButton(
       sprite: s2Sprite,
       size: Vector2.all(48.0),
+      isUnlocked: () => game.player.isSkillUnlocked(SkillCatalog.vanKiemQuyTong.id),
+      onLockedTap: () => game.world.add(FloatingTextComponent.info(position: game.player.position.clone(), text: 'Kỹ năng chưa mở khóa!')),
       cooldownRemaining: () => game.player.skill2CooldownRemaining,
       totalCooldown: 7.0,
       onPressed: () => game.player.useSkill2(),
@@ -183,6 +189,8 @@ class GameHud extends PositionComponent with HasGameReference<SurvivalGame> {
     _skill3Btn = HudActionButton(
       sprite: s3Sprite,
       size: Vector2.all(48.0),
+      isUnlocked: () => game.player.isSkillUnlocked(SkillCatalog.nguKiemPhiKiem.id),
+      onLockedTap: () => game.world.add(FloatingTextComponent.info(position: game.player.position.clone(), text: 'Kỹ năng chưa mở khóa!')),
       cooldownRemaining: () => game.player.skill3CooldownRemaining,
       totalCooldown: 12.0,
       onPressed: () => game.player.useSkill3(),
@@ -352,6 +360,8 @@ class HudActionButton extends SpriteComponent with TapCallbacks {
   final double Function()? cooldownRemaining;
   final double totalCooldown;
   final bool Function()? hasNotification;
+  final bool Function()? isUnlocked;
+  final VoidCallback? onLockedTap;
 
   double _blinkTimer = 0.0;
   bool _blinkVisible = true;
@@ -376,6 +386,8 @@ class HudActionButton extends SpriteComponent with TapCallbacks {
     this.cooldownRemaining,
     this.totalCooldown = 1.0,
     this.hasNotification,
+    this.isUnlocked,
+    this.onLockedTap,
   }) : super(
           sprite: sprite,
           size: size,
@@ -399,7 +411,45 @@ class HudActionButton extends SpriteComponent with TapCallbacks {
 
   @override
   void render(Canvas canvas) {
+    final unlocked = isUnlocked?.call() ?? true;
+    if (!unlocked) {
+      paint.color = const Color.fromRGBO(255, 255, 255, 0.35);
+    } else {
+      paint.color = Colors.white;
+    }
+
     super.render(canvas);
+
+    // Nếu kỹ năng bị khóa: Vẽ lớp mờ tối và biểu tượng ổ khóa
+    if (!unlocked) {
+      final lockOverlayPaint = Paint()
+        ..color = const Color(0x66000000)
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(Offset(size.x / 2, size.y / 2), size.x * 0.45, lockOverlayPaint);
+
+      final lockPainter = TextPainter(
+        text: TextSpan(
+          text: String.fromCharCode(Icons.lock.codePoint),
+          style: TextStyle(
+            fontFamily: Icons.lock.fontFamily,
+            package: Icons.lock.fontPackage,
+            fontSize: size.x * 0.42,
+            color: const Color(0xFFEEEEEE),
+            shadows: const [
+              Shadow(blurRadius: 3, color: Colors.black),
+              Shadow(blurRadius: 1, color: Colors.black, offset: Offset(1, 1)),
+            ],
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      lockPainter.layout();
+      lockPainter.paint(
+        canvas,
+        Offset((size.x - lockPainter.width) / 2, (size.y - lockPainter.height) / 2),
+      );
+      return;
+    }
 
     final cd = cooldownRemaining?.call() ?? 0.0;
     if (cd > 0 && totalCooldown > 0) {
@@ -431,14 +481,21 @@ class HudActionButton extends SpriteComponent with TapCallbacks {
 
     // Chấm đỏ thông báo (badge notification) nhấp nháy trên góc phải trên của nút
     if (hasNotification?.call() == true && _blinkVisible) {
-      final badgeCenter = Offset(size.x - 4, 4);
-      canvas.drawCircle(badgeCenter, 4.5, _badgePaint);
-      canvas.drawCircle(badgeCenter, 4.5, _badgeBorderPaint);
+      final badgeCenter = Offset(size.x - 3, 3);
+      canvas.drawCircle(badgeCenter, 5.0, _badgePaint);
+      canvas.drawCircle(badgeCenter, 5.0, _badgeBorderPaint);
     }
   }
 
   @override
   void onTapDown(TapDownEvent event) {
+    final unlocked = isUnlocked?.call() ?? true;
+    if (!unlocked) {
+      scale = Vector2.all(0.95);
+      onLockedTap?.call();
+      return;
+    }
+
     if ((cooldownRemaining?.call() ?? 0.0) <= 0) {
       scale = Vector2.all(0.9);
       onPressed();
